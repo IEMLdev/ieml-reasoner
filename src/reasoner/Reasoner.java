@@ -9,20 +9,16 @@ import java.util.Scanner;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import analogy.DefaultEquation;
 import analogy.DefaultProportion;
-import analogy.NoSolutionException;
-import analogy.SolutionBag;
-import analogy.SolutionMap;
-import analogy.sequence.EquationReadingHead;
-import parser.JSONParser;
+import parser.InvalidJSONStructureException;
+import parser.Word;
 import util.Tuple;
 
 public class Reasoner{
   public static final String WORDS_SAMPLE_FILENAME = "resources/words_sample.json";
 
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws InvalidJSONStructureException {
     Scanner scanner = null;
     try {
       scanner = new Scanner(new File(WORDS_SAMPLE_FILENAME));
@@ -41,8 +37,7 @@ public class Reasoner{
     ArrayList<String> translations = new ArrayList<String>();
     for (int i = 0; i < arr.length(); i++) {
       JSONObject obj = arr.getJSONObject(i);
-      Tuple<Object> t = JSONParser.parseJSON(obj);
-      words.add(t);
+      words.add(new Word(obj));
       translations.add(obj.getJSONObject("translations").getJSONArray("fr").toString());
 //      System.out.println(i + ":\n" + t.prettyPrint(0) + "\n" + obj.getJSONObject("translations").getJSONArray("fr"));
 
@@ -51,7 +46,7 @@ public class Reasoner{
       trUsl.putIfAbsent(obj.getJSONObject("translations").getJSONArray("fr").toString(), new ArrayList<String>());
       trUsl.get(obj.getJSONObject("translations").getJSONArray("fr").toString()).add(obj.getString("ieml"));
     }
-
+    
     System.out.println("Listing fr synonymous:");
     for (String k: uslTr.keySet()){
       if (uslTr.get(k).size() > 1){
