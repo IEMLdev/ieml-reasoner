@@ -1,8 +1,6 @@
 package parser;
 
 import java.util.HashMap;
-import java.util.HashSet;
-
 import org.json.JSONObject;
 
 import io.github.vletard.analogy.tuple.Tuple;
@@ -45,10 +43,7 @@ public class Lexeme extends IEMLTuple {
     HashMap<String, Object> m = new HashMap<String, Object>();
     if (depth <= 0) {
       try {
-        HashSet<String> translations = new HashSet<String>();
-        for (String tr: dictionary.getFromUSL(this.usl).get(lang))
-          translations.add(tr);
-        m.put("translations", translations);
+        m.put("translations", dictionary.getFromUSL(this.usl).get(lang));
         return new Tuple<Object>(m);
       } catch (MissingTranslationException e) {
         // in case no translation exist for this word in the dictionary, the mixed translation continues deeper

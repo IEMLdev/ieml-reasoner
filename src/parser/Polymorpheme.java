@@ -77,33 +77,30 @@ public class Polymorpheme extends IEMLTuple {
 
   @Override
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
+    HashMap<Object, Object> map = new HashMap<Object, Object>();
     if (depth <= 0) {
       try {
-        HashMap<Object, Object> translations = new HashMap<Object, Object>();
-        int key = 1;
-        for (String tr: dictionary.getFromUSL(this.usl).get(lang))
-          translations.put(key++, tr);
-        return new Tuple<Object>(translations);
+        map.put("translations", dictionary.getFromUSL(this.usl).get(lang));
+        return new Tuple<Object>(map);
       } catch (MissingTranslationException e) {
         // in case no translation exist for this word in the dictionary, the mixed translation continues deeper
       }
     }
     HashSet<Object> constant = new HashSet<Object>();
-    for (Morpheme morpheme: this.constant)
-      constant.add(morpheme.mixedTranslation(lang, depth-1, dictionary));
+    for (Morpheme m: this.constant)
+      constant.add(m.mixedTranslation(lang, depth-1, dictionary));
 
     ArrayList<HashSet<Object>> groups = new ArrayList<HashSet<Object>>();
     for (HashSet<Morpheme> s: this.groups) {
       HashSet<Object> group = new HashSet<Object>();
-      for (Morpheme morpheme: s)
-        group.add(morpheme.mixedTranslation(lang, depth-1, dictionary));
+      for (Morpheme m: s)
+        group.add(m.mixedTranslation(lang, depth-1, dictionary));
     }
 
-    HashMap<Object, Object> m = new HashMap<Object, Object>();
-    m.put("constant", new ImmutableSet<Object>(constant));
+    map.put("constant", new ImmutableSet<Object>(constant));
     for (int i = 0; i < groups.size(); i++)
-      m.put(i, new ImmutableSet<Object>(groups.get(i)));
-    return new Tuple<Object>(m);
+      map.put(i, new ImmutableSet<Object>(groups.get(i)));
+    return new Tuple<Object>(map);
   }
 
 }

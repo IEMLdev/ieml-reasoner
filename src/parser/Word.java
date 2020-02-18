@@ -53,18 +53,15 @@ public class Word extends IEMLTuple {
 
   @Override
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
+    HashMap<String, Object> m = new HashMap<String, Object>();
     if (depth <= 0) {
-      int key = 1;
       try {
-        HashMap<Integer, String> translations = new HashMap<Integer, String>();
-        for (String tr: dictionary.getFromUSL(this.usl).get(lang))
-          translations.put(key++, tr);
-        return new Tuple<Object>(translations);
+        m.put("translations", dictionary.getFromUSL(this.usl).get(lang));
+        return new Tuple<Object>(m);
       } catch (MissingTranslationException e) {
         // in case no translation exist for this word in the dictionary, the mixed translation continues deeper
       }
     }
-    HashMap<String, Object> m = new HashMap<String, Object>();
     m.put("role", this.role);
     m.put("syntagmatic_function", this.syntagmaticFunction.mixedTranslation(lang, depth-1, dictionary));
     return new Tuple<Object>(m);

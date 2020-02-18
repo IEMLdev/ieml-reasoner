@@ -69,13 +69,11 @@ public class FlexionSet extends IEMLTuple {
 
   @Override
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
+    HashMap<Object, Object> map = new HashMap<Object, Object>();
     if (depth <= 0) {
       try {
-        HashMap<Object, Object> translations = new HashMap<Object, Object>();
-        int key = 1;
-        for (String tr: dictionary.getFromUSL(this.usl).get(lang))
-          translations.put(key++, tr);
-        return new Tuple<Object>(translations);
+        map.put("translations", dictionary.getFromUSL(this.usl).get(lang));
+        return new Tuple<Object>(map);
       } catch (MissingTranslationException e) {
         // in case no translation exist for this word in the dictionary the mixed translation continues deeper
       }
@@ -83,8 +81,7 @@ public class FlexionSet extends IEMLTuple {
     HashSet<Object> s = new HashSet<Object>();
     for (Morpheme m: this.morphemes)
       s.add(m.mixedTranslation(lang, depth-1, dictionary));
-    HashMap<Object, Object> m = new HashMap<Object, Object>();
-    m.put("morphemes", s);
-    return new Tuple<Object>(m);
+    map.put("morphemes", s);
+    return new Tuple<Object>(map);
   }
 }

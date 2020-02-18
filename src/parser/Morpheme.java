@@ -1,8 +1,6 @@
 package parser;
 
 import java.util.HashMap;
-import java.util.HashSet;
-
 import org.json.JSONObject;
 
 import io.github.vletard.analogy.tuple.Tuple;
@@ -35,10 +33,7 @@ public class Morpheme extends IEMLTuple {
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
     HashMap<Object, Object> m = new HashMap<Object, Object>();
     try {
-      HashSet<String> translations = new HashSet<String>();
-      for (String tr: dictionary.getFromUSL(this.usl).get(lang))
-        translations.add(tr);
-      m.put("translations", translations);
+      m.put("translations", dictionary.getFromUSL(this.usl).get(lang));
     } catch (MissingTranslationException e) {
       m.put("usl", this.usl);  // in case no translation exist for this morpheme in the dictionary, just output the usl
       
