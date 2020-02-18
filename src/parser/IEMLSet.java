@@ -3,6 +3,8 @@ package parser;
 import java.util.Set;
 
 import io.github.vletard.analogy.set.ImmutableSet;
+import io.github.vletard.analogy.tuple.Tuple;
+import reasoner.Dictionary;
 
 public class IEMLSet<T extends IEMLUnit> extends ImmutableSet<T> implements IEMLUnit {
 
@@ -12,4 +14,8 @@ public class IEMLSet<T extends IEMLUnit> extends ImmutableSet<T> implements IEML
     super(s);
   }
 
+  @Override
+  public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
+    throw new RuntimeException(new MissingTranslationException());
+  }
 }

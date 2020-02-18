@@ -35,9 +35,26 @@ public class Polymorpheme extends IEMLTuple {
     return s;
   }
 
-  public static Polymorpheme factory(JSONObject obj) {
+  private static boolean checkStyle(JSONObject obj) {
+    String type = obj.getString("type");
+    if (type.contentEquals("polymorpheme"))
+      return true;
+    else if (type.contentEquals("morpheme")) {  // irregular value, should be uniformized
+      int total = obj.getJSONArray("constant").length();
+      for (int i = 0; i < obj.getJSONArray("groups").length(); i++)
+        total += obj.getJSONArray("groups").getJSONArray(i).length();
+      
+      return total == 1;
+    }
+    else
+      return false;
+  }
+
+  public static Polymorpheme factory(JSONObject obj) throws StyleException {
+    if (!checkStyle(obj))
+      throw new StyleException();
+        
     String type_str = obj.getString("type");
-    assert(type_str.contentEquals(typeName));
 
     final String usl = obj.getString("ieml");
     final IEMLStringAttribute type = new IEMLStringAttribute(type_str);
@@ -58,6 +75,7 @@ public class Polymorpheme extends IEMLTuple {
     return new Polymorpheme(m, constant, groups, usl);
   }
 
+  @Override
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
     if (depth <= 0) {
       try {

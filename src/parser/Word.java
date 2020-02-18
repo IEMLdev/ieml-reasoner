@@ -51,7 +51,8 @@ public class Word extends IEMLTuple {
     return this.usl;
   }
 
-  public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) throws MissingTranslationException {
+  @Override
+  public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
     if (depth <= 0) {
       int key = 1;
       try {

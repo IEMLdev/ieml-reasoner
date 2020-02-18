@@ -4,6 +4,9 @@ import java.util.LinkedList;
 
 import org.json.JSONArray;
 
+import io.github.vletard.analogy.tuple.Tuple;
+import reasoner.Dictionary;
+
 public class Role extends IEMLSequence<IEMLStringAttribute> {
   
   private static final long serialVersionUID = 72985125223312666L;
@@ -19,4 +22,8 @@ public class Role extends IEMLSequence<IEMLStringAttribute> {
     super(extractJSON(arr));
   }
 
+  @Override
+  public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
+    throw new RuntimeException(new MissingTranslationException());
+  }
 }

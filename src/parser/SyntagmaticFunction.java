@@ -5,9 +5,6 @@ import java.util.Map;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import io.github.vletard.analogy.tuple.Tuple;
-import reasoner.Dictionary;
-
 public abstract class SyntagmaticFunction extends IEMLTuple {
 
   private static final long serialVersionUID = 2105644212743558550L;
@@ -30,6 +27,4 @@ public abstract class SyntagmaticFunction extends IEMLTuple {
       throw new RuntimeException("Unsupported syntagmatic function: " + type);
     }
   }
-
-  public abstract Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) throws MissingTranslationException;
 }

@@ -1,6 +1,7 @@
 package parser;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 import org.json.JSONObject;
 
@@ -39,19 +40,20 @@ public class Lexeme extends IEMLTuple {
     return new Lexeme(m, content, flexion, usl);
   }
 
-  public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) throws MissingTranslationException {
+  @Override
+  public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
+    HashMap<String, Object> m = new HashMap<String, Object>();
     if (depth <= 0) {
-      int key = 1;
       try {
-        HashMap<Integer, String> translations = new HashMap<Integer, String>();
+        HashSet<String> translations = new HashSet<String>();
         for (String tr: dictionary.getFromUSL(this.usl).get(lang))
-          translations.put(key++, tr);
-        return new Tuple<Object>(translations);
+          translations.add(tr);
+        m.put("translations", translations);
+        return new Tuple<Object>(m);
       } catch (MissingTranslationException e) {
         // in case no translation exist for this word in the dictionary, the mixed translation continues deeper
       }
     }
-    HashMap<String, Object> m = new HashMap<String, Object>();
     m.put("pm_content", this.pm_content.mixedTranslation(lang, depth-1, dictionary));
     m.put("pm_flexion", this.pm_flexion.mixedTranslation(lang, depth-1, dictionary));
     return new Tuple<Object>(m);

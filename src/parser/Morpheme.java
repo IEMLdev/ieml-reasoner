@@ -5,7 +5,7 @@ import java.util.HashSet;
 
 import org.json.JSONObject;
 
-import io.github.vletard.analogy.set.ImmutableSet;
+import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
 
 public class Morpheme extends IEMLTuple {
@@ -31,15 +31,18 @@ public class Morpheme extends IEMLTuple {
     return new Morpheme(m, usl);
   }
 
-  public ImmutableSet<String> mixedTranslation(String lang, int depth, Dictionary dictionary) {
-    HashSet<String> translations = new HashSet<String>();
+  @Override
+  public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
+    HashMap<Object, Object> m = new HashMap<Object, Object>();
     try {
-      for (String tr: dictionary.getFromUSL(this.usl).get(lang)) {
+      HashSet<String> translations = new HashSet<String>();
+      for (String tr: dictionary.getFromUSL(this.usl).get(lang))
         translations.add(tr);
-      }
+      m.put("translations", translations);
     } catch (MissingTranslationException e) {
-      translations.add(this.usl); // in case no translation exist for this word in the dictionary, just output the usl
+      m.put("usl", this.usl);  // in case no translation exist for this morpheme in the dictionary, just output the usl
+      
     }
-    return new ImmutableSet<String>(translations);
+    return new Tuple<Object>(m);
   }
 }

@@ -47,7 +47,7 @@ public class Process extends SyntagmaticFunction {
   }
 
   @Override
-  public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) throws MissingTranslationException {
+  public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
     HashMap<String, Object> m = new HashMap<String, Object>();
     m.put("actor", this.actor.mixedTranslation(lang, depth-1, dictionary));
     m.put("type", this.get("type"));

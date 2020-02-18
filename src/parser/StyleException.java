@@ -6,4 +6,7 @@ public class StyleException extends Exception {
   public StyleException(String msg) {
     super(msg);
   }
+  
+  public StyleException() {
+  }
 }
