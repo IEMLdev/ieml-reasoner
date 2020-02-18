@@ -2,31 +2,34 @@ package parser;
 
 import java.util.Map;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
-import util.Tuple;
+import io.github.vletard.analogy.tuple.Tuple;
+import reasoner.Dictionary;
 
-public abstract class SyntagmaticFunction extends Tuple<Object> {
+public abstract class SyntagmaticFunction extends IEMLTuple {
 
-  public SyntagmaticFunction(Map<String, Object> m) {
+  private static final long serialVersionUID = 2105644212743558550L;
+  
+  public SyntagmaticFunction(Map<String, IEMLUnit> m) {
     super(m);
-
-    // TODO Add here redundant information about role
   }
 
-  public static SyntagmaticFunction newSyntagmaticFunction(JSONObject obj) throws InvalidJSONStructureException {
+  public static SyntagmaticFunction factory(JSONObject obj) throws JSONStructureException, JSONException, StyleException {
     String type = obj.getString("type");
 
     switch (type) {
     case "ProcessSyntagmaticFunction":
-      return new Process(obj);
+      return Process.factory(obj);
     case "DependantQualitySyntagmaticFunction":
-      return new Actant(obj);
+      return Actant.factory(obj);
     case "IndependantQualitySyntagmaticFunction":
-      return new Quality(obj);
+      return Quality.factory(obj);
     default:
       throw new RuntimeException("Unsupported syntagmatic function: " + type);
     }
   }
 
+  public abstract Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) throws MissingTranslationException;
 }

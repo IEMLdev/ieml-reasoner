@@ -2,50 +2,58 @@ package parser;
 
 import java.util.HashMap;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
-import util.Tuple;
+import io.github.vletard.analogy.tuple.Tuple;
+import reasoner.Dictionary;
 
-public class Lexeme extends Tuple<Object> {
+public class Lexeme extends IEMLTuple {
 
-  private static HashMap<String, Object> extractJSON(JSONObject obj){
-    String type = obj.getString("type");
-    assert(type.equals("lexeme"));
+  private static final long serialVersionUID = -2259223808535886545L;
+  public static final String typeName = "lexeme";
 
-    Tuple<Object> flexions;
-    {
-      HashMap<Object, Object> m = new HashMap<Object, Object>();
-      JSONArray arr = obj.getJSONObject("pm_flexion").getJSONArray("constant");
-      for (int i = 0; i < arr.length(); i++) {
-        Object flexion = new Morpheme(arr.getJSONObject(i)); // les flexions ne peuvent appartenir qu'à une liste de sous-ensembles de morphèmes donnés
-                                                              // si deux flexions ou plus du même sous-ensemble sont présentes, elles sont dans un groupe plutôt que
-                                                              // dans les constantes et le polymorphème devient un paradigme
-        if (m.put(flexion, true) != null)
-          throw new RuntimeException("Duplicate flexion in actor.pm_flexion.constant array. Duplicate is: " + flexion);
-      }
-      flexions = new Tuple<Object>(m);
-    }
+  private final String usl;
+  private final Polymorpheme pm_content;
+  private final FlexionSet pm_flexion;
 
-    Tuple<Object> groups; // XXX replace by Sequence<Object> ?
-    {
-      HashMap<Integer, Object> m = new HashMap<Integer, Object>();
-      JSONArray arr = obj.getJSONObject("pm_content").getJSONArray("groups");
-      for (int i = 0; i < arr.length(); i++)
-        m.put(i, new Polymorpheme(arr.getJSONArray(i)));
-      groups = new Tuple<Object>(m);
-    }
+  private Lexeme(HashMap<String, IEMLUnit> m, Polymorpheme content, FlexionSet flexions, String usl) {
+    super(m);
+    this.usl = usl;
+    this.pm_content = content;
+    this.pm_flexion = flexions;
+  }
 
-    HashMap<String, Object> m = new HashMap<String, Object>();
+  public static Lexeme factory(JSONObject obj) throws StyleException {
+    String type_str = obj.getString("type");
+    assert(type_str.contentEquals(typeName));
+
+    final String usl = obj.getString("ieml");
+    final IEMLStringAttribute type = new IEMLStringAttribute(type_str);
+    final Polymorpheme content = Polymorpheme.factory(obj.getJSONObject("pm_content"));
+    final FlexionSet flexion = FlexionSet.factory(obj.getJSONObject("pm_flexion"));
+
+    HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
     m.put("type", type);
-    m.put("flexions", flexions);
-    m.put("constant", new Polymorpheme(obj.getJSONObject("pm_content").getJSONArray("constant")));
-    m.put("groups", groups);
-    return m;
+    m.put("content", content);
+    m.put("flexions", flexion);
+    return new Lexeme(m, content, flexion, usl);
   }
 
-  public Lexeme(JSONObject obj) {
-    super(extractJSON(obj));
+  public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) throws MissingTranslationException {
+    if (depth <= 0) {
+      int key = 1;
+      try {
+        HashMap<Integer, String> translations = new HashMap<Integer, String>();
+        for (String tr: dictionary.getFromUSL(this.usl).get(lang))
+          translations.put(key++, tr);
+        return new Tuple<Object>(translations);
+      } catch (MissingTranslationException e) {
+        // in case no translation exist for this word in the dictionary, the mixed translation continues deeper
+      }
+    }
+    HashMap<String, Object> m = new HashMap<String, Object>();
+    m.put("pm_content", this.pm_content.mixedTranslation(lang, depth-1, dictionary));
+    m.put("pm_flexion", this.pm_flexion.mixedTranslation(lang, depth-1, dictionary));
+    return new Tuple<Object>(m);
   }
-
 }

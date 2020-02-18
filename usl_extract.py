@@ -1,6 +1,7 @@
 import os
 import json
 from requests import get
+from tqdm import tqdm
 
 import sys
 sys.path.insert(0, "ieml")
@@ -9,10 +10,11 @@ from ieml.ieml_database import GitInterface, IEMLDatabase
 from ieml.usl.word import Word
 from ieml.usl.usl import usl
 
-OUTPUT_FILENAME="resources/words_sample.json"
+WORDS_FILENAME="resources/words_sample.json"
+DICTIONARY_FILENAME="resources/dictionary.json"
 
 
-resource_dir = os.path.dirname(OUTPUT_FILENAME)
+resource_dir = "resources"
 if not os.path.isdir(resource_dir):
     os.mkdir(resource_dir)
 
@@ -27,7 +29,29 @@ db = IEMLDatabase(folder=gitdb.folder)
 
 usls = db.list(parse=True, type='word')
 
-parsed_usls = [get_word_structure(e) for e in usls]
+parsed_usls = list()
+for e in tqdm(usls):
+    parsed_usls.append(get_word_structure(e))
 
-with open(OUTPUT_FILENAME, "w") as fout:
+with open(WORDS_FILENAME, "w") as fout:
     json.dump(parsed_usls, fout, indent=2)
+
+
+descriptors = db.get_descriptors()
+
+usls = db.list()
+
+translations = list()
+for e in tqdm(usls):
+    assert(e not in translations)
+    tr_dict = dict()
+    values = descriptors.get_values_partial(e)
+    for (usl, lang, label), tr_list in values.items():
+        assert(usl == e)
+        if label == "translations":
+            assert(lang not in tr_dict)
+            tr_dict[lang] = tr_list
+    translations.append({"usl": e, "translations": tr_dict})
+
+with open(DICTIONARY_FILENAME, "w") as fout:
+    json.dump(translations, fout, indent=2)

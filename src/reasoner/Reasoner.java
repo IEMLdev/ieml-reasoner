@@ -7,45 +7,59 @@ import java.util.HashMap;
 import java.util.Scanner;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
-import analogy.DefaultProportion;
-import parser.InvalidJSONStructureException;
+import io.github.vletard.analogy.DefaultProportion;
+import parser.JSONStructureException;
+import parser.MissingTranslationException;
+import parser.StyleException;
 import parser.Word;
-import util.Tuple;
 
 public class Reasoner{
   public static final String WORDS_SAMPLE_FILENAME = "resources/words_sample.json";
+  public static final String DICTIONARY_FILENAME = "resources/dictionary.json";
 
 
-  public static void main(String[] args) throws InvalidJSONStructureException {
+  public static void main(String[] args) throws JSONStructureException, MissingTranslationException, JSONException, StyleException {
     Scanner scanner = null;
+    JSONArray jsonTranslations = null;
+    JSONArray jsonWordList = null;
     try {
+      scanner = new Scanner(new File(DICTIONARY_FILENAME));
+      scanner.useDelimiter("\\A");
+      jsonTranslations = new JSONArray(scanner.next());
+      scanner.close();
+      
       scanner = new Scanner(new File(WORDS_SAMPLE_FILENAME));
+      scanner.useDelimiter("\\A");
+      jsonWordList = new JSONArray(scanner.next());
+      scanner.close();
     } catch (FileNotFoundException e) {
       System.err.println("Cannot open IEML JSON exports. Please generate them first.");
       System.exit(1);
     }
-    scanner.useDelimiter("\\A");
-    JSONArray arr = new JSONArray(scanner.next());
-    scanner.close();
+
+    Dictionary dict = new Dictionary(jsonTranslations);
 
     HashMap<String, ArrayList<String>> uslTr = new HashMap<String, ArrayList<String>>();
     HashMap<String, ArrayList<String>> trUsl = new HashMap<String, ArrayList<String>>();
-    
-    ArrayList<Tuple<Object>> words = new ArrayList<Tuple<Object>>();
-    ArrayList<String> translations = new ArrayList<String>();
-    for (int i = 0; i < arr.length(); i++) {
-      JSONObject obj = arr.getJSONObject(i);
-      words.add(new Word(obj));
-      translations.add(obj.getJSONObject("translations").getJSONArray("fr").toString());
-//      System.out.println(i + ":\n" + t.prettyPrint(0) + "\n" + obj.getJSONObject("translations").getJSONArray("fr"));
 
+    ArrayList<Word> words = new ArrayList<Word>();
+    for (int i = 0; i < jsonWordList.length(); i++) {
+      JSONObject obj = jsonWordList.getJSONObject(i);
+      Word w = Word.factory(obj);
+      words.add(w);
+      System.out.println(i + " -> " + w.mixedTranslation("fr", 1, dict).prettyPrint(2));
+      System.out.println(i + " -> " + w.mixedTranslation("fr", 0, dict).prettyPrint(2));
+      
       uslTr.putIfAbsent(obj.getString("ieml"), new ArrayList<String>());
       uslTr.get(obj.getString("ieml")).add(obj.getJSONObject("translations").getJSONArray("fr").toString());
       trUsl.putIfAbsent(obj.getJSONObject("translations").getJSONArray("fr").toString(), new ArrayList<String>());
       trUsl.get(obj.getJSONObject("translations").getJSONArray("fr").toString()).add(obj.getString("ieml"));
     }
+    
+    System.exit(0);
     
     System.out.println("Listing fr synonymous:");
     for (String k: uslTr.keySet()){
@@ -86,13 +100,22 @@ public class Reasoner{
 //                System.out.println(arr.getJSONObject(k).getString("ieml"));
 //                System.out.println(words.get(l));
 //                System.out.println(arr.getJSONObject(l).getString("ieml"));
-                System.out.println(translations.get(i) + " : "
-                                 + translations.get(j) + " :: "
-                                 + translations.get(k) + " : "
-                                 + translations.get(l));
+                System.out.println(dict.getFromUSL(words.get(i).getUsl()).get("fr") + " : "
+                                 + dict.getFromUSL(words.get(j).getUsl()).get("fr") + " :: "
+                                 + dict.getFromUSL(words.get(k).getUsl()).get("fr") + " : "
+                                 + dict.getFromUSL(words.get(l).getUsl()).get("fr"));
               }
             }
           }
+          //assert(!(i == j || i == k));
+          //DefaultEquation e = new DefaultEquation(words.get(i), words.get(j), words.get(k));
+          //try {
+          //  SolutionBag<Object> m = e.getBestSolutions();
+          //  System.out.println(i + "" + translations.get(i) + " : "
+          //      + j + "" + translations.get(j) + " :: "
+          //      + k + "" + translations.get(k) + " : "
+          //      + m.iterator().next());
+          //} catch (NoSolutionException exception) {}
         }
       }
     }

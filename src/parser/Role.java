@@ -4,14 +4,14 @@ import java.util.LinkedList;
 
 import org.json.JSONArray;
 
-import util.Sequence;
-
-public class Role extends Sequence<String> {
+public class Role extends IEMLSequence<IEMLStringAttribute> {
   
-  private static LinkedList<String> extractJSON(JSONArray arr){
-    LinkedList<String> l = new LinkedList<String>();
+  private static final long serialVersionUID = 72985125223312666L;
+
+  private static LinkedList<IEMLStringAttribute> extractJSON(JSONArray arr){
+    LinkedList<IEMLStringAttribute> l = new LinkedList<IEMLStringAttribute>();
     for (int i = 0; i < arr.length(); i++)
-      l.add(arr.getString(i));
+      l.add(new IEMLStringAttribute(arr.getString(i)));
     return l;
   }
 
