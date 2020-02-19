@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Scanner;
 
 import org.json.JSONArray;
@@ -11,6 +12,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import io.github.vletard.analogy.DefaultProportion;
+import io.github.vletard.analogy.tuple.TupleEquation;
+import io.github.vletard.analogy.tuple.TupleSolution;
+import parser.IEMLUnit;
 import parser.JSONStructureException;
 import parser.MissingTranslationException;
 import parser.StyleException;
@@ -49,6 +53,7 @@ public class Reasoner{
     for (int i = 0; i < jsonWordList.length(); i++) {
       JSONObject obj = jsonWordList.getJSONObject(i);
       Word w = Word.factory(obj);
+      assert(w.equals(Word.factory(obj)));
       words.add(w);
       System.out.println(i + " -> " + w.mixedTranslation("fr", 1, dict).prettyPrint(2));
       System.out.println(i + " -> " + w.mixedTranslation("fr", 0, dict).prettyPrint(2));
@@ -58,8 +63,6 @@ public class Reasoner{
       trUsl.putIfAbsent(obj.getJSONObject("translations").getJSONArray("fr").toString(), new ArrayList<String>());
       trUsl.get(obj.getJSONObject("translations").getJSONArray("fr").toString()).add(obj.getString("ieml"));
     }
-    
-    System.exit(0);
     
     System.out.println("Listing fr synonymous:");
     for (String k: uslTr.keySet()){
@@ -92,14 +95,6 @@ public class Reasoner{
             if (!((i == j && k == l) || (i == k && j == l) || (i == j && j == k && k == l))) {
               DefaultProportion<Object> p = new DefaultProportion<Object>(words.get(i), words.get(j), words.get(k), words.get(l));
               if (p.isValid()) {
-//                System.out.println(words.get(i));
-//                System.out.println(arr.getJSONObject(i).getString("ieml"));
-//                System.out.println(words.get(j));
-//                System.out.println(arr.getJSONObject(j).getString("ieml"));
-//                System.out.println(words.get(k));
-//                System.out.println(arr.getJSONObject(k).getString("ieml"));
-//                System.out.println(words.get(l));
-//                System.out.println(arr.getJSONObject(l).getString("ieml"));
                 System.out.println(dict.getFromUSL(words.get(i).getUsl()).get("fr") + " : "
                                  + dict.getFromUSL(words.get(j).getUsl()).get("fr") + " :: "
                                  + dict.getFromUSL(words.get(k).getUsl()).get("fr") + " : "
@@ -107,15 +102,25 @@ public class Reasoner{
               }
             }
           }
-          //assert(!(i == j || i == k));
-          //DefaultEquation e = new DefaultEquation(words.get(i), words.get(j), words.get(k));
-          //try {
-          //  SolutionBag<Object> m = e.getBestSolutions();
-          //  System.out.println(i + "" + translations.get(i) + " : "
-          //      + j + "" + translations.get(j) + " :: "
-          //      + k + "" + translations.get(k) + " : "
-          //      + m.iterator().next());
-          //} catch (NoSolutionException exception) {}
+        }
+      }
+    }
+    
+
+    for (int i = 0; i < words.size(); i++) {
+      for (int j = i+1; j < words.size(); j++) {
+        for (int k = j+1; k < words.size(); k++) {
+          assert(!(i == j || i == k));
+          Word wi = words.get(i);
+          Word wj = words.get(j);
+          Word wk = words.get(k);
+          TupleEquation<IEMLUnit> e = new TupleEquation<IEMLUnit>(wi, wj, wk);
+          for (TupleSolution<IEMLUnit> s: e.uniqueSolutions()) {
+            System.out.println(wi.mixedTranslation("fr", 0, dict) + " : "
+                             + wj.mixedTranslation("fr", 0, dict) + " :: "
+                             + wk.mixedTranslation("fr", 0, dict) + " : "
+                             + s);
+          }
         }
       }
     }
