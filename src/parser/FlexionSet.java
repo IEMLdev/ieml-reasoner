@@ -62,9 +62,7 @@ public class FlexionSet extends IEMLTuple {
     final String usl = obj.getString("ieml");
     final JSONArray constant = obj.getJSONArray("constant");
     for (int i = 0; i < constant.length(); i++) {
-      Morpheme flexion = Morpheme.factory(constant.getJSONObject(i)); // les flexions ne peuvent appartenir qu'à une liste de sous-ensembles de morphèmes donnés
-      // si deux flexions ou plus du même sous-ensemble sont présentes, elles sont dans un groupe plutôt que
-      // dans les constantes et le polymorphème devient un paradigme
+      Morpheme flexion = Morpheme.factory(constant.getJSONObject(i));
       if (!s.add(flexion))
         throw new StyleException("Duplicate flexion in actor.pm_flexion.constant array. Duplicate is: " + flexion);
     }
