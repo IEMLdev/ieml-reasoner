@@ -4,11 +4,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map.Entry;
 import java.util.Scanner;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import io.github.vletard.analogy.DefaultEquation;
 import io.github.vletard.analogy.DefaultProportion;
 import io.github.vletard.analogy.Solution;
 import io.github.vletard.analogy.tuple.Tuple;
@@ -21,11 +24,10 @@ import parser.StyleException;
 import parser.Word;
 
 public class Reasoner{
-  public static final String WORDS_SAMPLE_FILENAME = "resources/words_sample.json";
-  public static final String DICTIONARY_FILENAME = "resources/dictionary.json";
+  private final Dictionary dict;
+  private final ArrayList<Word> words;
 
-
-  public static void main(String[] args) throws JSONStructureException, MissingTranslationException, StyleException, IncompatibleSolutionException {
+  public Reasoner(String WORDS_SAMPLE_FILENAME, String DICTIONARY_FILENAME) throws JSONStructureException, StyleException {
     Scanner scanner = null;
     JSONArray jsonTranslations = null;
     JSONArray jsonWordList = null;
@@ -34,78 +36,75 @@ public class Reasoner{
       scanner.useDelimiter("\\A");
       jsonTranslations = new JSONArray(scanner.next());
       scanner.close();
-      
+
       scanner = new Scanner(new File(WORDS_SAMPLE_FILENAME));
       scanner.useDelimiter("\\A");
       jsonWordList = new JSONArray(scanner.next());
       scanner.close();
     } catch (FileNotFoundException e) {
-      System.err.println("Cannot open IEML JSON exports. Please generate them first.");
-      System.exit(1);
+      throw new RuntimeException("Cannot open IEML JSON exports. Please generate them first.", e);
     }
 
-    Dictionary dict = new Dictionary(jsonTranslations);
+    this.dict = new Dictionary(jsonTranslations);
 
     HashMap<String, ArrayList<String>> uslTr = new HashMap<String, ArrayList<String>>();
     HashMap<String, ArrayList<String>> trUsl = new HashMap<String, ArrayList<String>>();
 
-    ArrayList<Word> words = new ArrayList<Word>();
+    this.words = new ArrayList<Word>();
     for (int i = 0; i < jsonWordList.length(); i++) {
       JSONObject obj = jsonWordList.getJSONObject(i);
       Word w = Word.factory(obj);
       assert(w.equals(Word.factory(obj)));
       words.add(w);
-      System.out.println(i + " -> " + w.mixedTranslation("fr", 1, dict).prettyPrint(2));
-      System.out.println(i + " -> " + w.mixedTranslation("fr", 0, dict).prettyPrint(2));
-      
+
       uslTr.putIfAbsent(obj.getString("ieml"), new ArrayList<String>());
       uslTr.get(obj.getString("ieml")).add(obj.getJSONObject("translations").getJSONArray("fr").toString());
       trUsl.putIfAbsent(obj.getJSONObject("translations").getJSONArray("fr").toString(), new ArrayList<String>());
       trUsl.get(obj.getJSONObject("translations").getJSONArray("fr").toString()).add(obj.getString("ieml"));
     }
-    
-    System.out.println("Listing fr synonymous:");
-    for (String k: uslTr.keySet()){
-      if (uslTr.get(k).size() > 1){
-        System.out.println(k + ":");
-        for (String v: uslTr.get(k)){
-          System.out.println(v);
-        }
-        System.out.println();
-      }
-    }
-    System.out.println();
+  }
 
-    System.out.println("Listing IEML synonymous:");
-    for (String k: trUsl.keySet()){
-      if (trUsl.get(k).size() > 1){
-        System.out.println(k + ":");
-        for (String v: trUsl.get(k)){
-          System.out.println(v);
-        }
-        System.out.println();
+  public HashMap<String, LinkedList<String>> searchingSynonymous(String lang) throws MissingTranslationException {
+    HashMap<String, LinkedList<String>> m = new HashMap<String, LinkedList<String>>();
+    HashMap<String, LinkedList<String>> multiple = new HashMap<String, LinkedList<String>>();
+
+    for (Word w: this.words) {
+      for (String singleTranslation: this.dict.getFromUSL(w.getUsl()).get(lang)) {
+        m.putIfAbsent(singleTranslation, new LinkedList<String>());
+        LinkedList<String> l = m.get(singleTranslation);
+        l.add(dict.getFromUSL(w.getUsl()).get(lang).toString());
+        if (l.size() == 2)
+          multiple.put(singleTranslation, l);
       }
     }
-    System.out.println();
-    
+    return multiple;
+  }
+
+  public LinkedList<String> computeDBProportions() throws MissingTranslationException{
+    LinkedList<String> validProportions = new LinkedList<String>();
+
     for (int i = 0; i < words.size(); i++) {
       for (int j = i+1; j < words.size(); j++) {
         for (int k = j+1; k < words.size(); k++) {
           for (int l = i+1; l < words.size(); l++) {
             if (!((i == j && k == l) || (i == k && j == l) || (i == j && j == k && k == l))) {
-              DefaultProportion<Object> p = new DefaultProportion<Object>(words.get(i), words.get(j), words.get(k), words.get(l));
+              DefaultProportion<Word> p = new DefaultProportion<Word>(words.get(i), words.get(j), words.get(k), words.get(l));
               if (p.isValid()) {
-                System.out.println(dict.getFromUSL(words.get(i).getUsl()).get("fr") + " : "
-                                 + dict.getFromUSL(words.get(j).getUsl()).get("fr") + " :: "
-                                 + dict.getFromUSL(words.get(k).getUsl()).get("fr") + " : "
-                                 + dict.getFromUSL(words.get(l).getUsl()).get("fr"));
+                validProportions.add(this.dict.getFromUSL(words.get(i).getUsl()).get("fr") + " : "
+                    + this.dict.getFromUSL(words.get(j).getUsl()).get("fr") + " :: "
+                    + this.dict.getFromUSL(words.get(k).getUsl()).get("fr") + " : "
+                    + this.dict.getFromUSL(words.get(l).getUsl()).get("fr"));
               }
             }
           }
         }
       }
     }
-    
+    return validProportions;
+  }
+
+  public LinkedList<String> computeEquations() throws IncompatibleSolutionException {
+    LinkedList<String> productiveEquations = new LinkedList<String>();
 
     for (int i = 0; i < words.size(); i++) {
       for (int j = i+1; j < words.size(); j++) {
@@ -116,13 +115,40 @@ public class Reasoner{
           Word wk = words.get(k);
           TupleEquation<IEMLUnit> e = new TupleEquation<IEMLUnit>(wi, wj, wk);
           for (Solution<Tuple<IEMLUnit>> s: e.uniqueSolutions()) {
-            System.out.println(wi.mixedTranslation("fr", 0, dict) + " : "
-                             + wj.mixedTranslation("fr", 0, dict) + " :: "
-                             + wk.mixedTranslation("fr", 0, dict) + " : "
-                             + Word.reFactory(s.getContent()).mixedTranslation("fr", 0, dict).prettyPrint(2));
+            productiveEquations.add(wi.mixedTranslation("fr", 0, dict) + " : "
+                            + wj.mixedTranslation("fr", 0, dict) + " :: "
+                            + wk.mixedTranslation("fr", 0, dict) + " : "
+                            + Word.reFactory(s.getContent()).mixedTranslation("fr", 0, dict).prettyPrint(2));
           }
         }
       }
     }
+    return productiveEquations;
+  }
+
+
+  public static void main(String[] args) throws JSONStructureException, MissingTranslationException, StyleException, IncompatibleSolutionException {
+    final String WORDS_SAMPLE_FILENAME = "resources/words_sample.json";
+    final String DICTIONARY_FILENAME = "resources/dictionary.json";
+
+    Reasoner r = new Reasoner(WORDS_SAMPLE_FILENAME, DICTIONARY_FILENAME);
+
+    System.out.println("The following french words are used in multiple IEML translations:");
+    for (Entry<String, LinkedList<String>> mapping: r.searchingSynonymous("fr").entrySet()) {
+      System.out.println(mapping.getKey() + ": " + mapping.getValue());
+    }
+    System.out.println();
+
+
+    System.out.println("Searching for proportions in word database:");
+    for (String proportion: r.computeDBProportions())
+      System.out.println(proportion);
+    System.out.println();
+
+
+    System.out.println("Solving equations in word database:");
+    for (String solvedEquation: r.computeEquations())
+      System.out.println(solvedEquation);
+    System.out.println();
   }
 }
