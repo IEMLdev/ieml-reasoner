@@ -64,7 +64,7 @@ public class Reasoner{
     }
   }
 
-  public HashMap<String, LinkedList<String>> searchingSynonymous(String lang) throws MissingTranslationException {
+  public HashMap<String, LinkedList<String>> searchPolysemy(String lang) throws MissingTranslationException {
     HashMap<String, LinkedList<String>> m = new HashMap<String, LinkedList<String>>();
     HashMap<String, LinkedList<String>> multiple = new HashMap<String, LinkedList<String>>();
 
@@ -134,7 +134,7 @@ public class Reasoner{
     Reasoner r = new Reasoner(WORDS_SAMPLE_FILENAME, DICTIONARY_FILENAME);
 
     System.out.println("The following french words are used in multiple IEML translations:");
-    for (Entry<String, LinkedList<String>> mapping: r.searchingSynonymous("fr").entrySet()) {
+    for (Entry<String, LinkedList<String>> mapping: r.searchPolysemy("fr").entrySet()) {
       System.out.println(mapping.getKey() + ": " + mapping.getValue());
     }
     System.out.println();
