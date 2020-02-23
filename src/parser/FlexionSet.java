@@ -5,6 +5,7 @@ import java.util.HashSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import io.github.vletard.analogy.set.ImmutableSet;
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
 
@@ -15,13 +16,13 @@ public class FlexionSet extends IEMLTuple {
   private final String usl;
   private final IEMLSet<Morpheme> morphemes;
 
-  private FlexionSet(HashMap<Object, IEMLUnit> m, IEMLSet<Morpheme> morphemes, String usl) throws StyleException {
+  private FlexionSet(HashMap<Object, IEMLUnit> m, IEMLSet<Morpheme> morphemes, String usl) {
     super(m);
     this.usl = usl;
     this.morphemes = morphemes;
   }
   
-  private static boolean checkStyle(JSONObject obj) { // TODO add verification for the subset of morphemes contained
+  private static boolean checkStyle(JSONObject obj) throws JSONStructureException { // TODO add verification for the subset of morphemes contained
     String type = obj.getString("type");
     if (type.contentEquals("polymorpheme"))
       return true;
@@ -33,10 +34,26 @@ public class FlexionSet extends IEMLTuple {
       return total == 1;
     }
     else
-      return false;
+      throw new JSONStructureException();
   }
 
-  public static FlexionSet factory(JSONObject obj) throws StyleException{
+  public static FlexionSet reFactory(Tuple<?> t) throws IncompatibleSolutionException {
+    try {
+      HashSet<Morpheme> s = new HashSet<Morpheme>();
+
+      for (Object m: (ImmutableSet<?>) t.get("morphemes"))
+        s.add(Morpheme.reFactory((Tuple<?>) m));
+
+      final IEMLSet<Morpheme> morphemes = new IEMLSet<Morpheme>(s);
+      final HashMap<Object, IEMLUnit> m = new HashMap<Object, IEMLUnit>();
+      m.put("morphemes", morphemes);
+      return new FlexionSet(m, morphemes, null);
+    } catch (ClassCastException e) {
+      throw new IncompatibleSolutionException(e);
+    }
+  }
+
+  public static FlexionSet factory(JSONObject obj) throws StyleException, JSONStructureException {
     if (!checkStyle(obj))
       throw new StyleException();
     

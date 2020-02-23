@@ -18,6 +18,22 @@ public class Morpheme extends IEMLTuple {
     this.usl = usl;
   }
 
+  public static Morpheme reFactory(Tuple<?> t) throws IncompatibleSolutionException {
+    try {
+      final IEMLStringAttribute type = (IEMLStringAttribute) t.get("type");
+      assert(type.getValue().contentEquals(typeName));
+
+      final IEMLStringAttribute usl = (IEMLStringAttribute) t.get("content");
+      
+      HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+      m.put("type", type);
+      m.put("content", usl);
+      return new Morpheme(m, usl.getValue());
+    } catch (ClassCastException e) {
+      throw new IncompatibleSolutionException(e);
+    }
+  }
+
   public static Morpheme factory(JSONObject obj){
     String type_str = obj.getString("type");
     assert(type_str.contentEquals(typeName));

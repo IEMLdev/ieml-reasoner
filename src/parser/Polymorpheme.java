@@ -26,6 +26,13 @@ public class Polymorpheme extends IEMLTuple {
     this.groups = groups;
   }
 
+  private static HashSet<Morpheme> restoreMorphemeSet(ImmutableSet<?> immutableSet) throws IncompatibleSolutionException {
+    HashSet<Morpheme> s = new HashSet<Morpheme>();
+    for (Object m: (ImmutableSet<?>) immutableSet)
+      s.add(Morpheme.reFactory((Tuple<?>) m));
+    return s;
+  }
+
   private static HashSet<Morpheme> extractMorphemeSet(JSONArray arr){
     HashSet<Morpheme> s = new HashSet<Morpheme>();
     for (int i = 0; i < arr.length(); i++) {
@@ -35,7 +42,7 @@ public class Polymorpheme extends IEMLTuple {
     return s;
   }
 
-  private static boolean checkStyle(JSONObject obj) {
+  private static boolean checkStyle(JSONObject obj) throws JSONStructureException {
     String type = obj.getString("type");
     if (type.contentEquals("polymorpheme"))
       return true;
@@ -47,14 +54,36 @@ public class Polymorpheme extends IEMLTuple {
       return total == 1;
     }
     else
-      return false;
+      throw new JSONStructureException();
   }
 
-  public static Polymorpheme factory(JSONObject obj) throws StyleException {
+  public static Polymorpheme reFactory(Tuple<?> t) throws IncompatibleSolutionException {
+    try {
+      final IEMLStringAttribute type = (IEMLStringAttribute) t.get("type");
+      final HashSet<Morpheme> constant = restoreMorphemeSet((ImmutableSet<?>) t.get("constant"));
+
+      HashMap<Object, IEMLUnit> m = new HashMap<Object, IEMLUnit>();
+      m.put("type", type);
+      m.put("constant", new IEMLSet<Morpheme>(constant));
+
+      final ArrayList<HashSet<Morpheme>> groups = new ArrayList<HashSet<Morpheme>>();
+      for (int i = 0; t.containsKey(i); i++) {
+        HashSet<Morpheme> set = restoreMorphemeSet((ImmutableSet<?>) t.get(i));
+        groups.add(set);
+        m.put(i, new IEMLSet<Morpheme>(set));
+      }
+
+      return new Polymorpheme(m, constant, groups, null);
+    } catch (ClassCastException e) {
+      throw new IncompatibleSolutionException(e);
+    }
+  }
+
+  public static Polymorpheme factory(JSONObject obj) throws StyleException, JSONStructureException {
     if (!checkStyle(obj))
       throw new StyleException();
         
-    String type_str = obj.getString("type");
+    String type_str = "polymorpheme";
 
     final String usl = obj.getString("ieml");
     final IEMLStringAttribute type = new IEMLStringAttribute(type_str);

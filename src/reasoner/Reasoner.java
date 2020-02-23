@@ -4,17 +4,17 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Scanner;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import io.github.vletard.analogy.DefaultProportion;
+import io.github.vletard.analogy.Solution;
+import io.github.vletard.analogy.tuple.Tuple;
 import io.github.vletard.analogy.tuple.TupleEquation;
-import io.github.vletard.analogy.tuple.TupleSolution;
 import parser.IEMLUnit;
+import parser.IncompatibleSolutionException;
 import parser.JSONStructureException;
 import parser.MissingTranslationException;
 import parser.StyleException;
@@ -25,7 +25,7 @@ public class Reasoner{
   public static final String DICTIONARY_FILENAME = "resources/dictionary.json";
 
 
-  public static void main(String[] args) throws JSONStructureException, MissingTranslationException, JSONException, StyleException {
+  public static void main(String[] args) throws JSONStructureException, MissingTranslationException, StyleException, IncompatibleSolutionException {
     Scanner scanner = null;
     JSONArray jsonTranslations = null;
     JSONArray jsonWordList = null;
@@ -115,11 +115,11 @@ public class Reasoner{
           Word wj = words.get(j);
           Word wk = words.get(k);
           TupleEquation<IEMLUnit> e = new TupleEquation<IEMLUnit>(wi, wj, wk);
-          for (TupleSolution<IEMLUnit> s: e.uniqueSolutions()) {
+          for (Solution<Tuple<IEMLUnit>> s: e.uniqueSolutions()) {
             System.out.println(wi.mixedTranslation("fr", 0, dict) + " : "
                              + wj.mixedTranslation("fr", 0, dict) + " :: "
                              + wk.mixedTranslation("fr", 0, dict) + " : "
-                             + s);
+                             + Word.reFactory(s.getContent()).mixedTranslation("fr", 0, dict).prettyPrint(2));
           }
         }
       }

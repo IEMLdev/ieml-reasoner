@@ -3,6 +3,7 @@ package parser;
 import java.util.HashMap;
 import org.json.JSONObject;
 
+import io.github.vletard.analogy.sequence.Sequence;
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
 
@@ -28,6 +29,22 @@ public class Word extends IEMLTuple {
     this.role = r;
     this.syntagmaticFunction = sf;
     this.usl = usl;
+  }
+
+  public static Word reFactory(Tuple<?> t) throws IncompatibleSolutionException {
+    try {
+      IEMLStringAttribute type = (IEMLStringAttribute) t.get("type");
+      Role role = Role.reFactory((Sequence<?>) t.get("role"));
+      SyntagmaticFunction sf = SyntagmaticFunction.reFactory((Tuple<?>) t.get("syntagmatic_function"));
+      
+      HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+      m.put("type", type);
+      m.put("role", role);
+      m.put("syntagmatic_function", sf);
+      return new Word(m, role, sf, null);
+    } catch (ClassCastException e) {
+      throw new IncompatibleSolutionException(e);
+    }
   }
 
   public static Word factory(JSONObject obj) throws JSONStructureException, StyleException {

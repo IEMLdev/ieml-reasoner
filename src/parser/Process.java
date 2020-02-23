@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.json.JSONObject;
 
 import io.github.vletard.analogy.tuple.Tuple;
@@ -18,10 +17,35 @@ public class Process extends SyntagmaticFunction {
   private final Lexeme actor;
   private final Map<String, Actant> actants;
 
-  private Process(HashMap<String, IEMLUnit> m, Lexeme actor, Map<String, Actant> actants) {
-    super(m);
+  private Process(HashMap<String, IEMLUnit> m, Lexeme actor, Map<String, Actant> actants, IEMLStringAttribute type) {
+    super(m, type);
     this.actor = actor;
     this.actants = actants;
+  }
+
+  public static Process processRefactory(Tuple<?> t, IEMLStringAttribute type) throws IncompatibleSolutionException {
+    try {
+      assert(type.getValue().equals(typeName));
+
+      final Lexeme actor = Lexeme.reFactory((Tuple<?>) t.get("actor"));
+      final HashMap<String, Actant> actants = new HashMap<String, Actant>();
+
+      for (String actant: new String[] {"initiator", "interactant", "recipient", "time", "location", "intention", "manner", "cause"}) {
+        Tuple<?> reloaded = (Tuple<?>) t.get(actant);
+        if (reloaded != null)
+          actants.put(actant, Actant.actantRefactory(reloaded, (IEMLStringAttribute) reloaded.get("type")));
+      }    
+
+      HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+      m.put("valence", (IEMLNumberAttribute) t.get("valence"));
+      m.put("actor", actor);
+      for (Entry<String, Actant> e: actants.entrySet()) {
+        m.put(e.getKey(), e.getValue());
+      }
+      return new Process(m, actor, Collections.unmodifiableMap(actants), type);
+    } catch (ClassCastException e) {
+      throw new IncompatibleSolutionException(e);
+    }
   }
 
   public static Process factory(JSONObject obj) throws StyleException, JSONStructureException {
@@ -34,16 +58,15 @@ public class Process extends SyntagmaticFunction {
     for (String actant: new String[] {"initiator", "interactant", "recipient", "time", "location", "intention", "manner", "cause"}) {
       if (!obj.isNull(actant))
         actants.put(actant, Actant.factory(obj.getJSONObject(actant)));
-    }    
+    }
 
     HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
-    m.put("type", new IEMLStringAttribute(type_str));
     m.put("valence", new IEMLNumberAttribute(obj.getInt("valence")));
     m.put("actor", Lexeme.factory(obj.getJSONObject("actor")));
     for (Entry<String, Actant> e: actants.entrySet()) {
       m.put(e.getKey(), e.getValue());
     }
-    return new Process(m, actor, Collections.unmodifiableMap(actants));
+    return new Process(m, actor, Collections.unmodifiableMap(actants), new IEMLStringAttribute(type_str));
   }
 
   @Override

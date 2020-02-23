@@ -4,6 +4,7 @@ import java.util.LinkedList;
 
 import org.json.JSONArray;
 
+import io.github.vletard.analogy.sequence.Sequence;
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
 
@@ -20,6 +21,19 @@ public class Role extends IEMLSequence<IEMLStringAttribute> {
 
   public Role(JSONArray arr) {
     super(extractJSON(arr));
+  }
+
+  private Role(Sequence<IEMLStringAttribute> s) {
+    super(s);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Role reFactory(Sequence<?> s) throws IncompatibleSolutionException {
+    try {
+      return new Role((Sequence<IEMLStringAttribute>) s);
+    } catch (ClassCastException e) {
+      throw new IncompatibleSolutionException(e);
+    }
   }
 
   @Override
