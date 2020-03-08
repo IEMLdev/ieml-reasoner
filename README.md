@@ -21,7 +21,8 @@ External libraries are automatically retrieved if necessary at compilation time.
 ### Resources
 
 The reasoner also requires a JSON extraction of the IEML database.
-This needs to be done once using `python3 usl_extract.py` (after git submodule initialization).
+The files are already packed in the `resources/` directory, they can be updated when necessary by using:
+`python3 usl_extract.py` (after git submodule initialization).
 
 
 ## Prototype

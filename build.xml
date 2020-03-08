@@ -9,9 +9,11 @@
 
     <mkdir dir="lib"/>
     <get src="https://repo1.maven.org/maven2/org/json/json/20190722/json-20190722.jar" dest="lib" usetimestamp="true"/>
+    <get src="https://apache.mirror.gtcomm.net//commons/compress/binaries/commons-compress-1.20-bin.zip" dest="lib" usetimestamp="true"/>
+    <unzip src="lib/commons-compress-1.20-bin.zip" dest="lib"/>
 
     <mkdir dir="build/classes"/>
-    <javac srcdir="src" destdir="build/classes" classpath="lib/json-20190722.jar:analogy/build/classes"/>
+    <javac srcdir="src" destdir="build/classes" classpath="lib/json-20190722.jar:lib/commons-compress-1.20/commons-compress-1.20.jar:analogy/build/classes"/>
   </target>
 
   <target name="jar" depends="compile">
@@ -20,7 +22,7 @@
   </target>
 
   <target name="run" depends="compile">
-    <java classname="reasoner.Reasoner" classpath="build/classes:lib/json-20190722.jar:analogy/build/classes" failonerror="true"/>
+    <java classname="reasoner.Reasoner" classpath="build/classes:lib/json-20190722.jar:lib/commons-compress-1.20/commons-compress-1.20.jar:analogy/build/classes" failonerror="true"/>
   </target>
 
 </project>

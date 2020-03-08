@@ -2,6 +2,7 @@ import os
 import json
 from requests import get
 from tqdm import tqdm
+import bz2
 
 import sys
 sys.path.insert(0, "ieml")
@@ -33,7 +34,7 @@ parsed_usls = list()
 for e in tqdm(usls):
     parsed_usls.append(get_word_structure(e))
 
-with open(WORDS_FILENAME, "w") as fout:
+with bz2.open(WORDS_FILENAME + ".bz2", "wt") as fout:
     json.dump(parsed_usls, fout, indent=2)
 
 
@@ -53,5 +54,5 @@ for e in tqdm(usls):
             tr_dict[lang] = tr_list
     translations.append({"usl": e, "translations": tr_dict})
 
-with open(DICTIONARY_FILENAME, "w") as fout:
+with bz2.open(DICTIONARY_FILENAME + ".bz2", "wt") as fout:
     json.dump(translations, fout, indent=2)

@@ -21,17 +21,18 @@ public class FlexionSet extends IEMLTuple {
     this.usl = usl;
     this.morphemes = morphemes;
   }
-  
+
   private static boolean checkStyle(JSONObject obj) throws JSONStructureException { // TODO add verification for the subset of morphemes contained
     String type = obj.getString("type");
     if (type.contentEquals("polymorpheme"))
       return true;
     else if (type.contentEquals("morpheme")) {  // irregular value, should be uniformized
-      int total = obj.getJSONArray("constant").length();
-      for (int i = 0; i < obj.getJSONArray("groups").length(); i++)
-        total += obj.getJSONArray("groups").getJSONArray(i).length();
-      
-      return total == 1;
+      return (obj.isNull("constant") || obj.getJSONArray("constant").length() == 1) && obj.getJSONArray("groups").length() == 0;
+      //      int total = obj.getJSONArray("constant").length();
+      //      for (int i = 0; i < obj.getJSONArray("groups").length(); i++)
+      //        total += obj.getJSONArray("groups").getJSONArray(i).length();
+      //      
+      //      return total == 1;
     }
     else
       throw new JSONStructureException();
@@ -56,23 +57,27 @@ public class FlexionSet extends IEMLTuple {
   public static FlexionSet factory(JSONObject obj) throws StyleException, JSONStructureException {
     if (!checkStyle(obj))
       throw new StyleException();
-    
-    HashSet<Morpheme> s = new HashSet<Morpheme>();
 
     final String usl = obj.getString("ieml");
-    final JSONArray constant = obj.getJSONArray("constant");
-    for (int i = 0; i < constant.length(); i++) {
-      Morpheme flexion = Morpheme.factory(constant.getJSONObject(i));
-      if (!s.add(flexion))
-        throw new StyleException("Duplicate flexion in actor.pm_flexion.constant array. Duplicate is: " + flexion);
-    }
-    final JSONArray groups = obj.getJSONArray("groups");
-    for (int i = 0; i < groups.length(); i++) {
-      JSONArray group = groups.getJSONArray(i);
-      for (int j = 0; j < group.length(); j++) {
-        Morpheme paradigmaticFlexion = Morpheme.factory(group.getJSONObject(j));
-        if (! s.add(paradigmaticFlexion))
-          throw new StyleException("Duplicate flexion in actor.pm_flexion.groups[" + i + "] array. Duplicate is: " + paradigmaticFlexion);
+    HashSet<Morpheme> s = new HashSet<Morpheme>();
+
+    if (obj.getString("type").contentEquals("morpheme") && obj.isNull("constant"))
+      s.add(Morpheme.factory(obj));  // style exception
+    else {
+      final JSONArray constant = obj.getJSONArray("constant");
+      for (int i = 0; i < constant.length(); i++) {
+        Morpheme flexion = Morpheme.factory(constant.getJSONObject(i));
+        if (!s.add(flexion))
+          throw new StyleException("Duplicate flexion in actor.pm_flexion.constant array. Duplicate is: " + flexion);
+      }
+      final JSONArray groups = obj.getJSONArray("groups");
+      for (int i = 0; i < groups.length(); i++) {
+        JSONArray group = groups.getJSONArray(i);
+        for (int j = 0; j < group.length(); j++) {
+          Morpheme paradigmaticFlexion = Morpheme.factory(group.getJSONObject(j));
+          if (! s.add(paradigmaticFlexion))
+            throw new StyleException("Duplicate flexion in actor.pm_flexion.groups[" + i + "] array. Duplicate is: " + paradigmaticFlexion);
+        }
       }
     }
 

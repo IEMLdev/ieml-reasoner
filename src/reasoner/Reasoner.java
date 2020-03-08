@@ -1,17 +1,18 @@
 package reasoner;
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.Scanner;
 
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import io.github.vletard.analogy.DefaultEquation;
 import io.github.vletard.analogy.DefaultProportion;
 import io.github.vletard.analogy.Solution;
 import io.github.vletard.analogy.tuple.Tuple;
@@ -27,23 +28,19 @@ public class Reasoner{
   private final Dictionary dict;
   private final ArrayList<Word> words;
 
-  public Reasoner(String WORDS_SAMPLE_FILENAME, String DICTIONARY_FILENAME) throws JSONStructureException, StyleException {
+  public Reasoner(InputStream wordStream, InputStream dictStream) throws JSONStructureException, StyleException {
     Scanner scanner = null;
     JSONArray jsonTranslations = null;
     JSONArray jsonWordList = null;
-    try {
-      scanner = new Scanner(new File(DICTIONARY_FILENAME));
-      scanner.useDelimiter("\\A");
-      jsonTranslations = new JSONArray(scanner.next());
-      scanner.close();
+    scanner = new Scanner(dictStream);
+    scanner.useDelimiter("\\A");
+    jsonTranslations = new JSONArray(scanner.next());
+    scanner.close();
 
-      scanner = new Scanner(new File(WORDS_SAMPLE_FILENAME));
-      scanner.useDelimiter("\\A");
-      jsonWordList = new JSONArray(scanner.next());
-      scanner.close();
-    } catch (FileNotFoundException e) {
-      throw new RuntimeException("Cannot open IEML JSON exports. Please generate them first.", e);
-    }
+    scanner = new Scanner(wordStream);
+    scanner.useDelimiter("\\A");
+    jsonWordList = new JSONArray(scanner.next());
+    scanner.close();
 
     this.dict = new Dictionary(jsonTranslations);
 
@@ -55,7 +52,7 @@ public class Reasoner{
       JSONObject obj = jsonWordList.getJSONObject(i);
       Word w = Word.factory(obj);
       assert(w.equals(Word.factory(obj)));
-      words.add(w);
+      this.words.add(w);
 
       uslTr.putIfAbsent(obj.getString("ieml"), new ArrayList<String>());
       uslTr.get(obj.getString("ieml")).add(obj.getJSONObject("translations").getJSONArray("fr").toString());
@@ -116,9 +113,9 @@ public class Reasoner{
           TupleEquation<IEMLUnit> e = new TupleEquation<IEMLUnit>(wi, wj, wk);
           for (Solution<Tuple<IEMLUnit>> s: e.uniqueSolutions()) {
             productiveEquations.add(wi.mixedTranslation("fr", 0, dict) + " : "
-                            + wj.mixedTranslation("fr", 0, dict) + " :: "
-                            + wk.mixedTranslation("fr", 0, dict) + " : "
-                            + Word.reFactory(s.getContent()).mixedTranslation("fr", 0, dict).prettyPrint(2));
+                + wj.mixedTranslation("fr", 0, dict) + " :: "
+                + wk.mixedTranslation("fr", 0, dict) + " : "
+                + Word.reFactory(s.getContent()).mixedTranslation("fr", 0, dict).prettyPrint(2));
           }
         }
       }
@@ -128,10 +125,17 @@ public class Reasoner{
 
 
   public static void main(String[] args) throws JSONStructureException, MissingTranslationException, StyleException, IncompatibleSolutionException {
-    final String WORDS_SAMPLE_FILENAME = "resources/words_sample.json";
-    final String DICTIONARY_FILENAME = "resources/dictionary.json";
+    final String WORDS_SAMPLE_FILENAME = "resources/words_sample.json.bz2";
+    final String DICTIONARY_FILENAME = "resources/dictionary.json.bz2";
 
-    Reasoner r = new Reasoner(WORDS_SAMPLE_FILENAME, DICTIONARY_FILENAME);
+    Reasoner r;
+    try {
+      InputStream wordStream = new BZip2CompressorInputStream(new FileInputStream(WORDS_SAMPLE_FILENAME));
+      InputStream dictStream = new BZip2CompressorInputStream(new FileInputStream(DICTIONARY_FILENAME));
+      r = new Reasoner(wordStream, dictStream);
+    } catch (IOException e) {
+      throw new RuntimeException("Cannot open IEML JSON exports. Please generate them first.", e);
+    }
 
     System.out.println("The following french words are used in multiple IEML translations:");
     for (Entry<String, LinkedList<String>> mapping: r.searchPolysemy("fr").entrySet()) {

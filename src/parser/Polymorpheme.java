@@ -47,11 +47,12 @@ public class Polymorpheme extends IEMLTuple {
     if (type.contentEquals("polymorpheme"))
       return true;
     else if (type.contentEquals("morpheme")) {  // irregular value, should be uniformized
-      int total = obj.getJSONArray("constant").length();
-      for (int i = 0; i < obj.getJSONArray("groups").length(); i++)
-        total += obj.getJSONArray("groups").getJSONArray(i).length();
-      
-      return total == 1;
+      return (obj.isNull("constant") || obj.getJSONArray("constant").length() == 1) && obj.getJSONArray("groups").length() == 0;
+//      int total = obj.getJSONArray("constant").length();
+//      for (int i = 0; i < obj.getJSONArray("groups").length(); i++)
+//        total += obj.getJSONArray("groups").getJSONArray(i).length();
+//      
+//      return total == 1;
     }
     else
       throw new JSONStructureException();
@@ -83,11 +84,18 @@ public class Polymorpheme extends IEMLTuple {
     if (!checkStyle(obj))
       throw new StyleException();
         
-    String type_str = "polymorpheme";
+    String type_str = "polymorpheme";  // the type of a Polymorpheme is always polymorpheme
 
     final String usl = obj.getString("ieml");
     final IEMLStringAttribute type = new IEMLStringAttribute(type_str);
-    final HashSet<Morpheme> constant = extractMorphemeSet(obj.getJSONArray("constant"));
+    final HashSet<Morpheme> constant;
+    if (obj.getString("type").contentEquals("morpheme") && obj.isNull("constant")) {
+      // style exception
+      constant = new HashSet<Morpheme>();
+      constant.add(Morpheme.factory(obj));
+    }
+    else
+      constant = extractMorphemeSet(obj.getJSONArray("constant"));
     final ArrayList<HashSet<Morpheme>> groups = new ArrayList<HashSet<Morpheme>>();
 
     HashMap<Object, IEMLUnit> m = new HashMap<Object, IEMLUnit>();
