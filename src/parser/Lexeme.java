@@ -57,6 +57,15 @@ public class Lexeme extends IEMLTuple {
     return new Lexeme(m, content, flexion, usl);
   }
 
+  public String getUSL() {
+    String flexionsUSL = this.pm_flexion.getPseudoUSL();
+    String contentUSL = this.pm_content.getUSL();
+    if (contentUSL.length() == 0)
+      return "(" + flexionsUSL + ")";
+    else
+      return "(" + flexionsUSL + ")(" + contentUSL + ")";
+  }
+
   @Override
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
     HashMap<String, Object> m = new HashMap<String, Object>();

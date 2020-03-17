@@ -52,7 +52,16 @@ public class Reasoner{
     for (int i = 0; i < jsonWordList.length(); i++) {
       JSONObject obj = jsonWordList.getJSONObject(i);
       Word w = Word.factory(obj);
-      assert(w.equals(Word.factory(obj)));
+      assert(w.equals(Word.factory(obj)));  // checking equals implementation
+      try {
+        String usl = w.getUsl().replaceAll(" +", " ");
+        String reBuiltUSL = Word.reFactory(w).getUsl();
+        assert(usl.contentEquals(reBuiltUSL));  // checking USL generator
+      } catch (IncompatibleSolutionException e) {
+        System.err.println(w.getUsl());
+        System.err.println(w);
+        throw new RuntimeException(e);
+      }
       this.words.add(w);
 
       uslTr.putIfAbsent(obj.getString("ieml"), new ArrayList<String>());
@@ -90,10 +99,10 @@ public class Reasoner{
               long start = System.currentTimeMillis();
               DefaultProportion<Word> p = new DefaultProportion<Word>(words.get(i), words.get(j), words.get(k), words.get(l));
               if (p.isValid()) {
-                validProportions.add(this.dict.getFromUSL(words.get(i).getUsl()).get("fr") + " : "
-                    + this.dict.getFromUSL(words.get(j).getUsl()).get("fr") + " :: "
-                    + this.dict.getFromUSL(words.get(k).getUsl()).get("fr") + " : "
-                    + this.dict.getFromUSL(words.get(l).getUsl()).get("fr"));
+                validProportions.add(i + "" + this.dict.getFromUSL(words.get(i).getUsl()).get("fr") + " : "
+                    + j + "" + this.dict.getFromUSL(words.get(j).getUsl()).get("fr") + " :: "
+                    + k + "" + this.dict.getFromUSL(words.get(k).getUsl()).get("fr") + " : "
+                    + l + "" + this.dict.getFromUSL(words.get(l).getUsl()).get("fr"));
               }
               durations.add(System.currentTimeMillis() - start);
             }
@@ -113,7 +122,7 @@ public class Reasoner{
           max = d;
         sum += d;
       }
-      long avg = new Double(sum / durations.size()).longValue();
+      long avg = Double.valueOf(sum / durations.size()).longValue();
       this.verifyingStats  = "   number: " + durations.size() + "\n";
       this.verifyingStats += "    total: " + formatDuration(sum) + "\n";
       this.verifyingStats += "  average: " + formatDuration(avg) + "\n";
@@ -123,7 +132,7 @@ public class Reasoner{
     return validProportions;
   }
 
-  public LinkedList<String> computeEquations() throws IncompatibleSolutionException, MissingTranslationException {
+  public LinkedList<String> computeEquations() throws IncompatibleSolutionException, MissingTranslationException, StyleException {
     LinkedList<Long> durations = new LinkedList<Long>();
     LinkedList<String> productiveEquations = new LinkedList<String>();
 
@@ -140,7 +149,7 @@ public class Reasoner{
             productiveEquations.add(this.dict.getFromUSL(wi.getUsl()).get("fr") + "\n" + wi.getUsl() + "\n\t : \n"
                 + this.dict.getFromUSL(wj.getUsl()).get("fr") + "\n" + wj.getUsl() + "\n\t :: \n"
                 + this.dict.getFromUSL(wk.getUsl()).get("fr") + "\n" + wk.getUsl() + "\n\t : \n"
-                + Word.reFactory(s.getContent()).mixedTranslation("fr", 0, dict).prettyPrint(2));
+                + Word.reFactory(s.getContent()).getUsl());
             durations.add(System.currentTimeMillis() - start);
           }
         }
@@ -158,7 +167,7 @@ public class Reasoner{
           max = d;
         sum += d;
       }
-      long avg = new Double(sum / durations.size()).longValue();
+      long avg = Double.valueOf(sum / durations.size()).longValue();
       this.solvingStats  = "    total: " + formatDuration(sum) + "\n";
       this.solvingStats += "   number: " + durations.size() + "\n";
       this.solvingStats += "  average: " + formatDuration(avg) + "\n";

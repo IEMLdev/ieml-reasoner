@@ -1,5 +1,6 @@
 package parser;
 
+import java.util.List;
 import java.util.Map;
 
 import org.json.JSONException;
@@ -15,6 +16,9 @@ public abstract class SyntagmaticFunction extends IEMLTuple {
     m.put("type", type);
     return m;
   }
+
+  protected abstract String buildPseudoUSL(List<IEMLStringAttribute> wordRole, String rolePrefix) throws StyleException;
+  public abstract String getPseudoUSL(List<IEMLStringAttribute> wordRole) throws StyleException;
   
   public SyntagmaticFunction(Map<String, IEMLUnit> m, IEMLStringAttribute type) {
     super(SyntagmaticFunction.initType(m, type));

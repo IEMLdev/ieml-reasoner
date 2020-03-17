@@ -3,6 +3,8 @@ package parser;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.TreeSet;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -24,6 +26,10 @@ public class Polymorpheme extends IEMLTuple {
     this.usl = usl;
     this.constant = constant;
     this.groups = groups;
+  }
+
+  public String getUSL() {
+    return this.usl;
   }
 
   private static HashSet<Morpheme> restoreMorphemeSet(ImmutableSet<?> immutableSet) throws IncompatibleSolutionException {
@@ -74,7 +80,15 @@ public class Polymorpheme extends IEMLTuple {
         m.put(i, new IEMLSet<Morpheme>(set));
       }
 
-      return new Polymorpheme(m, constant, groups, null);
+      String usl = "";
+      for (Morpheme morpheme: new TreeSet<Morpheme>(constant)) {
+        if (!usl.contentEquals(""))
+          usl += " ";
+        usl += morpheme.getUSL();
+      }
+      if (usl.contentEquals("E:"))
+        usl = "";
+      return new Polymorpheme(m, constant, groups, usl);
     } catch (ClassCastException e) {
       throw new IncompatibleSolutionException(e);
     }
@@ -139,5 +153,4 @@ public class Polymorpheme extends IEMLTuple {
       map.put(i, new ImmutableSet<Object>(groups.get(i)));
     return new Tuple<Object>(map);
   }
-
 }

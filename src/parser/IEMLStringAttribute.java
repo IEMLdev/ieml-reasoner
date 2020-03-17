@@ -13,6 +13,10 @@ public class IEMLStringAttribute implements IEMLUnit {
   public String getValue() {
     return this.str;
   }
+
+  public boolean contentEquals(CharSequence s) {
+    return this.str.contentEquals(s);
+  }
   
   @Override
   public String toString() {

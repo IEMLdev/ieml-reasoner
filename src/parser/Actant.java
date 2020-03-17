@@ -1,6 +1,8 @@
 package parser;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 import org.json.JSONObject;
 
@@ -11,6 +13,8 @@ public class Actant extends SyntagmaticFunction {
 
   private static final long serialVersionUID = 6496934876365452689L;
   public static final String typeName = "DependantQualitySyntagmaticFunction";
+  public static final String typeRole = "E:A:.";
+  public static final String typeRoleName = "dependant";
 
   private final Lexeme actor;
   private final Actant dependant;
@@ -94,5 +98,50 @@ public class Actant extends SyntagmaticFunction {
     if (this.independant != null)
       m.put("independant", this.independant.mixedTranslation(lang, depth-1, dictionary));
     return new Tuple<Object>(m);
+  }
+
+  @Override
+  protected String buildPseudoUSL(List<IEMLStringAttribute> wordRole, String rolePrefix) throws StyleException {
+    boolean markedRole = false;
+    String usl = this.actor.getUSL();
+
+    if (this.dependant != null) {
+      String newRolePrefix = rolePrefix + " " + Actant.typeRole;
+      usl += " > ";
+      if (wordRole.size() > 0 && wordRole.get(0).getValue().contentEquals(Actant.typeRoleName)) {
+        markedRole = true;
+        if (wordRole.size() == 1)
+          usl += "! ";
+        usl += newRolePrefix + " " + this.dependant.buildPseudoUSL(wordRole.subList(1, wordRole.size()), newRolePrefix);
+      }
+      else
+        usl += newRolePrefix + " " + this.dependant.buildPseudoUSL(Collections.emptyList(), newRolePrefix);
+    }
+    if (this.independant != null) {
+      String newRolePrefix = rolePrefix + " " + Quality.typeRole;
+      usl += " > ";
+      if (wordRole.size() > 0 && wordRole.get(0).getValue().contentEquals(Quality.typeRoleName)) {
+        markedRole = true;
+        if (wordRole.size() == 1)
+          usl += "! ";
+        usl += newRolePrefix + " " + this.independant.buildPseudoUSL(wordRole.subList(1, wordRole.size()), newRolePrefix);
+      }
+      else
+        usl += newRolePrefix + " " + this.independant.buildPseudoUSL(Collections.emptyList(), newRolePrefix);
+    }
+    if (wordRole.size() > 0 && !markedRole)
+      throw new StyleException("The word role specifies a non existing node.");
+
+    return usl;
+  }
+
+  @Override
+  public String getPseudoUSL(List<IEMLStringAttribute> wordRole) throws StyleException {
+    if (wordRole.size() < 1 || !wordRole.get(0).contentEquals(typeRoleName))
+      throw new StyleException("The word role specifies a non existing node.");
+    String usl = "";
+    if (wordRole.size() == 1)
+      usl += "! ";
+    return usl + typeRole + " " + this.buildPseudoUSL(wordRole.subList(1, wordRole.size()), typeRole);
   }
 }

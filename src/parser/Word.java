@@ -14,7 +14,7 @@ public class Word extends IEMLTuple {
 
   private final String usl;
   private final Role role;
-  private final SyntagmaticFunction syntagmaticFunction;
+  public final SyntagmaticFunction syntagmaticFunction;
 
   /**
    * Private Word constructor available to the public factory method.
@@ -31,7 +31,7 @@ public class Word extends IEMLTuple {
     this.usl = usl;
   }
 
-  public static Word reFactory(Tuple<?> t) throws IncompatibleSolutionException {
+  public static Word reFactory(Tuple<?> t) throws IncompatibleSolutionException, StyleException {
     try {
       IEMLStringAttribute type = (IEMLStringAttribute) t.get("type");
       Role role = Role.reFactory((Sequence<?>) t.get("role"));
@@ -41,7 +41,7 @@ public class Word extends IEMLTuple {
       m.put("type", type);
       m.put("role", role);
       m.put("syntagmatic_function", sf);
-      return new Word(m, role, sf, null);
+      return new Word(m, role, sf, "[" + sf.getPseudoUSL(role.toList()) + "]");
     } catch (ClassCastException e) {
       throw new IncompatibleSolutionException(e);
     }

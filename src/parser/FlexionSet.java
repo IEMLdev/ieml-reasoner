@@ -2,6 +2,8 @@ package parser;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.TreeSet;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -85,6 +87,19 @@ public class FlexionSet extends IEMLTuple {
     final HashMap<Object, IEMLUnit> m = new HashMap<Object, IEMLUnit>();
     m.put("morphemes", morphemes);
     return new FlexionSet(m, morphemes, usl);
+  }
+
+  public String getPseudoUSL() {
+    String usl = "";
+    for (Morpheme m: new TreeSet<Morpheme>(this.morphemes.asSet())) {
+      if (usl.length() > 0)
+        usl += " ";
+      usl += m.getUSL();
+    }
+    if (usl.contentEquals("E:"))
+      return "";
+    else
+      return usl;
   }
 
   @Override
