@@ -17,7 +17,7 @@ public class Process extends SyntagmaticFunction {
   public static final String typeRoleName = "process";
   public static final List<String> typeRolePerValence = List.of("E:S:.", "E:T:.", "E:B:.");
   public static final List<String> actantNames = List.of("initiator", "interactant", "recipient", "time", "location", "intention", "manner", "cause");
-  public static final List<String> actantRoles = List.of("E:.n.-", "E:.d.-", "E:.k.-", "time", "E:.l.-", "intention", "E:.f.-", "E:.s.-");
+  public static final List<String> actantRoles = List.of("E:.n.-", "E:.d.-", "E:.k.-", "E:.t.-", "E:.l.-", "E:.m.-", "E:.f.-", "E:.s.-");
 
   private final IEMLNumberAttribute valence;
   private final Lexeme actor;
