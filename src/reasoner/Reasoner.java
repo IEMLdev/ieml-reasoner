@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -63,6 +64,14 @@ public class Reasoner{
     }
   }
 
+  private Word getWord(int i) {
+    return this.words.get(i);
+  }
+  
+  private List<String> getWordTranslation(int i, String lang) throws MissingTranslationException {
+    return this.dict.getFromUSL(this.words.get(i).getUsl()).get(lang);
+  }
+
   public HashMap<String, LinkedList<Word>> searchPolysemy(String lang) throws MissingTranslationException {
     HashMap<String, LinkedList<Word>> iemlWordsPerNLWord = new HashMap<String, LinkedList<Word>>();
     HashMap<String, LinkedList<Word>> multiple = new HashMap<String, LinkedList<Word>>();
@@ -102,9 +111,14 @@ public class Reasoner{
     return verifySingleProportion(w1, w2, w3, w4);
   }
 
-  public LinkedList<String> computeDBProportions() throws MissingTranslationException{
+  /**
+   * Computes the list of every valid analogical proportion from the word database.
+   * Note that only one proportion is retained for each commutative cluster. 
+   * @return the list of word quadruples that contitute valid proportions.
+   */
+  public LinkedList<Quadruple<Integer>> validDBProportions() {
     LinkedList<Long> durations = new LinkedList<Long>();
-    LinkedList<String> validProportions = new LinkedList<String>();
+    LinkedList<Quadruple<Integer>> validProportions = new LinkedList<Quadruple<Integer>>();
 
     for (int i = 0; i < words.size(); i++) {
       for (int j = i+1; j < words.size(); j++) {
@@ -112,12 +126,9 @@ public class Reasoner{
           for (int l = i+1; l < words.size(); l++) {
             if (!((i == j && k == l) || (i == k && j == l) || (i == j && j == k && k == l))) {
               long start = System.currentTimeMillis();
-              if (verifySingleProportion(words.get(i), words.get(j), words.get(k), words.get(l))) {
-                validProportions.add(i + "" + this.dict.getFromUSL(words.get(i).getUsl()).get("fr") + " : "
-                    + j + "" + this.dict.getFromUSL(words.get(j).getUsl()).get("fr") + " :: "
-                    + k + "" + this.dict.getFromUSL(words.get(k).getUsl()).get("fr") + " : "
-                    + l + "" + this.dict.getFromUSL(words.get(l).getUsl()).get("fr"));
-              }
+              if (verifySingleProportion(words.get(i), words.get(j), words.get(k), words.get(l)))
+                validProportions.add(new Quadruple<Integer>(i, j, k, l));
+                
               durations.add(System.currentTimeMillis() - start);
             }
           }
@@ -193,9 +204,14 @@ public class Reasoner{
     return solveSingleEquation(w1, w2, w3);
   }
 
-  public LinkedList<String> computeEquations() throws IncompatibleSolutionException, MissingTranslationException, StyleException {
+  /**
+   * Computes and returns the list of every productive analogical equation from the word database.
+   * Note that only one equation is retained for each commutative cluster.
+   * @return the list of the word triples that constitute productive equations.
+   */
+  public LinkedList<Triple<Integer>> computeEquations() {
     LinkedList<Long> durations = new LinkedList<Long>();
-    LinkedList<String> productiveEquations = new LinkedList<String>();
+    LinkedList<Triple<Integer>> productiveEquations = new LinkedList<Triple<Integer>>();
 
     for (int i = 0; i < words.size(); i++) {
       for (int j = i+1; j < words.size(); j++) {
@@ -204,14 +220,10 @@ public class Reasoner{
           Word wi = words.get(i);
           Word wj = words.get(j);
           Word wk = words.get(k);
-          for (Word wl: solveSingleEquation(wi, wj, wk)) {
-            long start = System.currentTimeMillis();
-            productiveEquations.add(this.dict.getFromUSL(wi.getUsl()).get("fr") + "\n" + wi.getUsl() + "\n\t : \n"
-                + this.dict.getFromUSL(wj.getUsl()).get("fr") + "\n" + wj.getUsl() + "\n\t :: \n"
-                + this.dict.getFromUSL(wk.getUsl()).get("fr") + "\n" + wk.getUsl() + "\n\t : \n"
-                + wl.getUsl());
-            durations.add(System.currentTimeMillis() - start);
-          }
+          long start = System.currentTimeMillis();
+          if (solveSingleEquation(wi, wj, wk).iterator().hasNext())
+            productiveEquations.add(new Triple<Integer>(i, j, k));
+          durations.add(System.currentTimeMillis() - start);
         }
       }
     }
@@ -296,14 +308,32 @@ public class Reasoner{
 
 
     System.out.println("Solving equations in word database:");
-    for (String solvedEquation: r.computeEquations())
-      System.out.println(solvedEquation + "\n\n");
+    for (Triple<Integer> t: r.computeEquations()) {
+      for (Word w: solveSingleEquation(r.getWord(t.getFirst()), r.getWord(t.getSecond()), r.getWord(t.getThird()))) {
+        System.out.println(r.getWordTranslation(t.getFirst(), "fr"));
+        System.out.println(r.getWord(t.getFirst()).getUsl());
+        System.out.println("\t:");
+        System.out.println(r.getWordTranslation(t.getSecond(), "fr"));
+        System.out.println(r.getWord(t.getSecond()).getUsl());
+        System.out.println("\t::");
+        System.out.println(r.getWordTranslation(t.getThird(), "fr"));
+        System.out.println(r.getWord(t.getThird()).getUsl());
+        System.out.println("\t:");
+        System.out.println(w.getUsl());
+        System.out.println("\n");
+      }
+    }
     System.out.println();
 
 
     System.out.println("Searching for proportions in word database:");
-    for (String proportion: r.computeDBProportions())
-      System.out.println(proportion);
+    for (Quadruple<Integer> q: r.validDBProportions()) {
+      String s = r.getWordTranslation(q.getFirst(), "fr") + " : ";
+      s += r.getWordTranslation(q.getSecond(), "fr") + " :: ";
+      s += r.getWordTranslation(q.getThird(), "fr") + " : ";
+      s += r.getWordTranslation(q.getFourth(), "fr");
+      System.out.println(s);
+    }
     System.out.println();
 
     System.err.println("Equation solving stats:\n" + r.getSolvingStats());
