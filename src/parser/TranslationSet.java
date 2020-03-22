@@ -18,7 +18,10 @@ public class TranslationSet implements Iterable<Map.Entry<String, List<String>>>
   
   public TranslationSet(JSONObject obj) {
     this.map = new HashMap<String, ArrayList<String>>();
-    this.usl = obj.getString("usl");
+    if (!obj.isNull("usl"))  // this should better be identical in every type of json dump
+      this.usl = obj.getString("usl");
+    else
+      this.usl = obj.getString("ieml");
     
     final JSONObject tr = obj.getJSONObject("translations");
     for (String lang: tr.keySet()) {

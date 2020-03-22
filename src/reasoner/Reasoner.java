@@ -5,18 +5,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import io.github.vletard.analogy.DefaultEquation;
 import io.github.vletard.analogy.DefaultProportion;
 import io.github.vletard.analogy.Solution;
-import io.github.vletard.analogy.tuple.Tuple;
-import io.github.vletard.analogy.tuple.TupleEquation;
+import parser.IEMLTuple;
 import parser.IEMLUnit;
 import parser.IncompatibleSolutionException;
 import parser.JSONStructureException;
@@ -28,29 +30,19 @@ public class Reasoner{
   private final Dictionary dict;
   private final ArrayList<Word> words;
   String verifyingStats, solvingStats;
+  
+  public Reasoner(ArrayList<JSONObject> jsonWordList) throws JSONStructureException, StyleException {
+    this(jsonWordList, jsonWordList);
+  }
 
-  public Reasoner(InputStream wordStream, InputStream dictStream) throws JSONStructureException, StyleException {
-    Scanner scanner = null;
-    JSONArray jsonTranslations = null;
-    JSONArray jsonWordList = null;
-    scanner = new Scanner(dictStream);
-    scanner.useDelimiter("\\A");
-    jsonTranslations = new JSONArray(scanner.next());
-    scanner.close();
-
-    scanner = new Scanner(wordStream);
-    scanner.useDelimiter("\\A");
-    jsonWordList = new JSONArray(scanner.next());
-    scanner.close();
-
-    this.dict = new Dictionary(jsonTranslations);
+  public Reasoner(ArrayList<JSONObject> jsonWordList, ArrayList<JSONObject> fullIEMLTranslations) throws JSONStructureException, StyleException {
+    this.dict = new Dictionary(fullIEMLTranslations);
 
     HashMap<String, ArrayList<String>> uslTr = new HashMap<String, ArrayList<String>>();
     HashMap<String, ArrayList<String>> trUsl = new HashMap<String, ArrayList<String>>();
 
     this.words = new ArrayList<Word>();
-    for (int i = 0; i < jsonWordList.length(); i++) {
-      JSONObject obj = jsonWordList.getJSONObject(i);
+    for (JSONObject obj: jsonWordList) {
       Word w = Word.factory(obj);
       assert(w.equals(Word.factory(obj)));  // checking equals implementation
       try {
@@ -87,6 +79,29 @@ public class Reasoner{
     return multiple;
   }
 
+  private static boolean verifySingleProportion(IEMLUnit ieml1, IEMLUnit ieml2, IEMLUnit ieml3, IEMLUnit ieml4) {
+    DefaultProportion<IEMLUnit> p = new DefaultProportion<IEMLUnit>(ieml1, ieml2, ieml3, ieml4);
+    return p.isValid();
+  }
+
+  /**
+   * Constitutes an analogical proportion using the provided words in JSON format, and tests for its validity.
+   * @param word1 first word of the proportion (position A)
+   * @param word2 second word of the proportion (position B)
+   * @param word3 third word of the proportion (position C)
+   * @param word4 fourth word of the proportion (position D)
+   * @return true if the proportion is valid, false of it is not.
+   * @throws JSONStructureException if the JSON structure of one of the provided strings is not as expected.
+   * @throws StyleException if an inconsistency was found in the arguments of the JSON structure of one of the provided strings.
+   */
+  public static boolean verifySingleWordProportion(String word1, String word2, String word3, String word4) throws JSONStructureException, StyleException {
+    Word w1 = Word.factory(new JSONObject(word1));
+    Word w2 = Word.factory(new JSONObject(word2));
+    Word w3 = Word.factory(new JSONObject(word3));
+    Word w4 = Word.factory(new JSONObject(word4));
+    return verifySingleProportion(w1, w2, w3, w4);
+  }
+
   public LinkedList<String> computeDBProportions() throws MissingTranslationException{
     LinkedList<Long> durations = new LinkedList<Long>();
     LinkedList<String> validProportions = new LinkedList<String>();
@@ -97,8 +112,7 @@ public class Reasoner{
           for (int l = i+1; l < words.size(); l++) {
             if (!((i == j && k == l) || (i == k && j == l) || (i == j && j == k && k == l))) {
               long start = System.currentTimeMillis();
-              DefaultProportion<Word> p = new DefaultProportion<Word>(words.get(i), words.get(j), words.get(k), words.get(l));
-              if (p.isValid()) {
+              if (verifySingleProportion(words.get(i), words.get(j), words.get(k), words.get(l))) {
                 validProportions.add(i + "" + this.dict.getFromUSL(words.get(i).getUsl()).get("fr") + " : "
                     + j + "" + this.dict.getFromUSL(words.get(j).getUsl()).get("fr") + " :: "
                     + k + "" + this.dict.getFromUSL(words.get(k).getUsl()).get("fr") + " : "
@@ -132,6 +146,53 @@ public class Reasoner{
     return validProportions;
   }
 
+  private static Iterable<Word> solveSingleEquation(IEMLTuple ieml1, IEMLTuple ieml2, IEMLTuple ieml3) {
+    DefaultEquation<IEMLTuple, ? extends Solution<IEMLTuple>> e = DefaultEquation.factory(ieml1, ieml2, ieml3);
+    return new Iterable<Word>() {
+      @Override
+      public Iterator<Word> iterator() {
+        return new Iterator<Word>() {
+          Iterator<? extends Solution<IEMLTuple>> it = e.uniqueSolutions().iterator();
+
+          @Override
+          public boolean hasNext() {
+            return this.it.hasNext();
+          }
+
+          @Override
+          public Word next() {
+            if (this.hasNext()) {
+              try {
+                return Word.reFactory(this.it.next().getContent());
+              } catch (IncompatibleSolutionException | StyleException e) {
+                throw new RuntimeException(e);
+              }
+            }
+            else
+              throw new NoSuchElementException();
+          }
+        };
+      }
+    };
+  }
+
+  /**
+   * Constitutes an analogical equation using the provided words in JSON format, and returns an {@link Iterable}
+   * object over its unique solutions (position D).
+   * @param word1 first word of the equation (position A)
+   * @param word2 second word of the equation (position B)
+   * @param word3 third word of the equation (position C)
+   * @return true if the proportion is valid, false of it is not.
+   * @throws JSONStructureException if the JSON structure of one of the provided strings is not as expected.
+   * @throws StyleException if an inconsistency was found in the arguments of the JSON structure of one of the provided strings.
+   */
+  public static Iterable<Word> solveSingleWordEquation(String word1, String word2, String word3) throws JSONStructureException, StyleException {
+    Word w1 = Word.factory(new JSONObject(word1));
+    Word w2 = Word.factory(new JSONObject(word2));
+    Word w3 = Word.factory(new JSONObject(word3));
+    return solveSingleEquation(w1, w2, w3);
+  }
+
   public LinkedList<String> computeEquations() throws IncompatibleSolutionException, MissingTranslationException, StyleException {
     LinkedList<Long> durations = new LinkedList<Long>();
     LinkedList<String> productiveEquations = new LinkedList<String>();
@@ -143,13 +204,12 @@ public class Reasoner{
           Word wi = words.get(i);
           Word wj = words.get(j);
           Word wk = words.get(k);
-          TupleEquation<IEMLUnit> e = new TupleEquation<IEMLUnit>(wi, wj, wk);
-          for (Solution<Tuple<IEMLUnit>> s: e.uniqueSolutions()) {
+          for (Word wl: solveSingleEquation(wi, wj, wk)) {
             long start = System.currentTimeMillis();
             productiveEquations.add(this.dict.getFromUSL(wi.getUsl()).get("fr") + "\n" + wi.getUsl() + "\n\t : \n"
                 + this.dict.getFromUSL(wj.getUsl()).get("fr") + "\n" + wj.getUsl() + "\n\t :: \n"
                 + this.dict.getFromUSL(wk.getUsl()).get("fr") + "\n" + wk.getUsl() + "\n\t : \n"
-                + Word.reFactory(s.getContent()).getUsl());
+                + wl.getUsl());
             durations.add(System.currentTimeMillis() - start);
           }
         }
@@ -194,11 +254,32 @@ public class Reasoner{
     try {
       InputStream wordStream = new BZip2CompressorInputStream(new FileInputStream(WORDS_SAMPLE_FILENAME));
       InputStream dictStream = new BZip2CompressorInputStream(new FileInputStream(DICTIONARY_FILENAME));
-      r = new Reasoner(wordStream, dictStream);
+
+      ArrayList<JSONObject> jsonTranslations = new ArrayList<JSONObject>();
+      {
+        Scanner scanner = new Scanner(dictStream);
+        scanner.useDelimiter("\\A");
+        JSONArray arr = new JSONArray(scanner.next());
+        for (int i = 0; i < arr.length(); i++)
+          jsonTranslations.add(arr.getJSONObject(i));
+        scanner.close();
+      }
+
+      ArrayList<JSONObject> jsonWordList = new ArrayList<JSONObject>();
+      {
+        Scanner scanner = new Scanner(wordStream);
+        scanner.useDelimiter("\\A");
+        JSONArray arr = new JSONArray(scanner.next());
+        for (int i = 0; i < arr.length(); i++)
+          jsonWordList.add(arr.getJSONObject(i));
+        scanner.close();
+      }
+
+      r = new Reasoner(jsonWordList, jsonWordList);
     } catch (IOException e) {
       throw new RuntimeException("Cannot open IEML JSON exports. Please generate them first.", e);
     }
-    
+
     System.out.println("Displaying current database:");
     for (Word w: r.words) {
       System.out.println(w.mixedTranslation("fr", 0, r.dict).get("translations") + " = " + w.getUsl());
@@ -229,7 +310,7 @@ public class Reasoner{
     System.err.println("Proportion verification stats:\n" + r.getVerifyingStats());
   }
 
-  public static String formatDuration(long millisInterval) {
+  private static String formatDuration(long millisInterval) {
     long abs = Math.abs(millisInterval);
     String str;
     if (millisInterval == 0)
