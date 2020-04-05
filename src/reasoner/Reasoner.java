@@ -287,7 +287,7 @@ public class Reasoner{
         scanner.close();
       }
 
-      r = new Reasoner(jsonWordList, jsonWordList);
+      r = new Reasoner(jsonWordList, jsonTranslations);
     } catch (IOException e) {
       throw new RuntimeException("Cannot open IEML JSON exports. Please generate them first.", e);
     }
