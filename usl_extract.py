@@ -22,7 +22,7 @@ if not os.path.isdir(resource_dir):
 def get_word_structure(w: Word):
     return get("https://dev.intlekt.io/api/words/{}/?repository=IEMLdev".format(str(w))).json()
 
-gitdb = GitInterface()
+gitdb = GitInterface(origin="https://github.com/plevyieml/ieml-language")
 gitdb.pull() # download database in ~/.cache/ieml/ folder
 
 # instanciate a ieml.ieml_database.IEMLDatabase from the downloaded git repository
