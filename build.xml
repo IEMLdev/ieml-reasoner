@@ -16,13 +16,9 @@
     <javac srcdir="src" destdir="build/classes" classpath="lib/json-20190722.jar:lib/commons-compress-1.20/commons-compress-1.20.jar:analogy/build/classes"/>
   </target>
 
-  <target name="jar" depends="compile">
-    <mkdir dir="build/jar"/>
-    <jar destfile="build/jar/ieml-reasoner.jar" basedir="build/classes" classpath="lib/json-20190722.jar"/>
-  </target>
-
   <target name="run" depends="compile">
-    <java classname="reasoner.Reasoner" classpath="build/classes:lib/json-20190722.jar:lib/commons-compress-1.20/commons-compress-1.20.jar:analogy/build/classes" failonerror="true"/>
+    <!-- to run outside ant, use: java -cp build/classes:lib/json-20190722.jar:lib/commons-compress-1.20/commons-compress-1.20.jar:analogy/build/classes reasoner.Reasoner  -->
+    <java classname="reasoner.Reasoner" classpath="build/classes:lib/json-20190722.jar:lib/commons-compress-1.20/commons-compress-1.20.jar:analogy/build/classes" failonerror="true" />
   </target>
 
 </project>
