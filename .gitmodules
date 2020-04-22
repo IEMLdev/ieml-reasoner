@@ -1,6 +1,6 @@
 [submodule "analogy"]
 	path = analogy
-	url = https://github.com/vletard/analogy-java
+	url = https://github.com/vletard/gear
 [submodule "ieml"]
 	path = ieml
 	url = https://github.com/IEMLdev/ieml
