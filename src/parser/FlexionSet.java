@@ -40,7 +40,7 @@ public class FlexionSet extends IEMLTuple {
       throw new JSONStructureException();
   }
 
-  public static FlexionSet reFactory(Tuple<?> t) throws IncompatibleSolutionException {
+  public static FlexionSet reBuild(Tuple<?> t) throws IncompatibleSolutionException {
     try {
       HashSet<Morpheme> s = new HashSet<Morpheme>();
 

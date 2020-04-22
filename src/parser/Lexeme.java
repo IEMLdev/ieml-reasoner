@@ -22,14 +22,14 @@ public class Lexeme extends IEMLTuple {
     this.pm_content = content;
     this.pm_flexion = flexions;
   }
-
+  
   public static Lexeme reFactory(Tuple<?> t) throws IncompatibleSolutionException {
     try {
       final IEMLStringAttribute type = (IEMLStringAttribute) t.get("type");
       assert(type.getValue().contentEquals(typeName));
 
       final Polymorpheme content = Polymorpheme.reFactory((Tuple<?>) t.get("content"));
-      final FlexionSet flexion = FlexionSet.reFactory((Tuple<?>) t.get("flexions"));
+      final FlexionSet flexion = FlexionSet.reBuild((Tuple<?>) t.get("flexions"));
 
       HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
       m.put("type", type);

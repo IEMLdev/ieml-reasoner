@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -11,11 +13,15 @@ import org.json.JSONObject;
 import io.github.vletard.analogy.set.ImmutableSet;
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
+import util.Pair;
 
-public class Polymorpheme extends IEMLTuple {
+public class Polymorpheme extends Writable {
 
   private static final long serialVersionUID = -3319789347573674986L;
   public static final String typeName = "polymorpheme";
+  static final Pattern BLANK_PATTERN = Pattern.compile("(\\s*).*");
+  static final Pattern GROUP_OPEN = Pattern.compile("(\\s*m\\d+\\().*");
+  static final Pattern GROUP_CLOSE = Pattern.compile("(\\)).*");
 
   private final String usl;
   private final HashSet<Morpheme> constant;
@@ -28,6 +34,7 @@ public class Polymorpheme extends IEMLTuple {
     this.groups = groups;
   }
 
+  @Override
   public String getUSL() {
     return this.usl;
   }
@@ -54,11 +61,11 @@ public class Polymorpheme extends IEMLTuple {
       return true;
     else if (type.contentEquals("morpheme")) {  // irregular value, should be uniformized
       return (obj.isNull("constant") || obj.getJSONArray("constant").length() == 1) && obj.getJSONArray("groups").length() == 0;
-//      int total = obj.getJSONArray("constant").length();
-//      for (int i = 0; i < obj.getJSONArray("groups").length(); i++)
-//        total += obj.getJSONArray("groups").getJSONArray(i).length();
-//      
-//      return total == 1;
+      //      int total = obj.getJSONArray("constant").length();
+      //      for (int i = 0; i < obj.getJSONArray("groups").length(); i++)
+      //        total += obj.getJSONArray("groups").getJSONArray(i).length();
+      //      
+      //      return total == 1;
     }
     else
       throw new JSONStructureException();
@@ -97,7 +104,7 @@ public class Polymorpheme extends IEMLTuple {
   public static Polymorpheme factory(JSONObject obj) throws StyleException, JSONStructureException {
     if (!checkStyle(obj))
       throw new StyleException();
-        
+
     String type_str = "polymorpheme";  // the type of a Polymorpheme is always polymorpheme
 
     final String usl = obj.getString("ieml");
@@ -124,6 +131,64 @@ public class Polymorpheme extends IEMLTuple {
     }
 
     return new Polymorpheme(m, constant, groups, usl);
+  }
+
+  public static Pair<Polymorpheme, Integer> parse(String input) throws ParseException {
+    int offset = 0;
+    HashSet<Morpheme> constant = new HashSet<Morpheme>();
+    try {
+      Pair<HashSet<Morpheme>, Integer> result = parseMorphemeSet(input);
+      constant = result.getFirst();
+      offset += result.getSecond();
+    } catch (ParseException e) {}
+
+    final ArrayList<HashSet<Morpheme>> groups = new ArrayList<HashSet<Morpheme>>();
+    while (true) {
+      Matcher m = GROUP_OPEN.matcher(input.substring(offset));
+      if (!m.matches())
+        break;
+      offset += m.group(1).length();
+      Pair<HashSet<Morpheme>, Integer> result = parseMorphemeSet(input.substring(offset));
+      groups.add(result.getFirst());
+      offset += result.getSecond();
+      m = GROUP_CLOSE.matcher(input.substring(offset));
+      if (!m.matches())
+        throw new ParseException("Could not read a valid polymorpheme.");
+      offset += m.group(1).length();
+    }
+
+    if (offset == 0)
+      throw new ParseException("A polymorpheme cannot have length 0.");
+    
+    HashMap<Object, IEMLUnit> map = new HashMap<Object, IEMLUnit>();
+    map.put("type", new IEMLStringAttribute(typeName));
+    map.put("constant", new IEMLSet<Morpheme>(constant));
+
+    for (int i = 0; i < groups.size(); i++)
+      map.put(i, new IEMLSet<Morpheme>(groups.get(i)));
+
+    return new Pair<Polymorpheme, Integer>(new Polymorpheme(map, constant, groups, input.substring(0, offset)), offset);
+  }
+
+  private static Pair<HashSet<Morpheme>, Integer> parseMorphemeSet(String input) throws ParseException {
+    int offset = 0;
+    HashSet<Morpheme> morphemes = new HashSet<Morpheme>();
+    try {
+      while (true) {
+        Pair<Morpheme, Integer> result = Morpheme.parse(input.substring(offset));
+        offset += result.getSecond();
+        Matcher m = BLANK_PATTERN.matcher(input.substring(offset));
+        boolean matching = m.matches();
+        assert(matching);
+        offset += m.group(1).length();
+        morphemes.add(result.getFirst());
+      }
+    } catch (ParseException e) {
+      if (offset == 0)
+        throw new ParseException("Could not read a valid morpheme set.", e);
+      else
+        return new Pair<HashSet<Morpheme>, Integer>(morphemes, offset);
+    }
   }
 
   @Override

@@ -7,7 +7,7 @@ import io.github.vletard.analogy.sequence.Sequence;
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
 
-public class Word extends IEMLTuple {
+public class Word extends Writable {
 
   private static final long serialVersionUID = 8351186437917149613L;
   public static final String typeName = "word";
@@ -31,11 +31,11 @@ public class Word extends IEMLTuple {
     this.usl = usl;
   }
 
-  public static Word reFactory(Tuple<?> t) throws IncompatibleSolutionException, StyleException {
+  public static Word reBuild(Tuple<?> t) throws IncompatibleSolutionException, StyleException {
     try {
       IEMLStringAttribute type = (IEMLStringAttribute) t.get("type");
       Role role = Role.reFactory((Sequence<?>) t.get("role"));
-      SyntagmaticFunction sf = SyntagmaticFunction.reFactory((Tuple<?>) t.get("syntagmatic_function"));
+      SyntagmaticFunction sf = SyntagmaticFunction.reBuild((Tuple<?>) t.get("syntagmatic_function"));
       
       HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
       m.put("type", type);
@@ -64,7 +64,8 @@ public class Word extends IEMLTuple {
     return new Word(m, role, sf, usl);
   }
 
-  public String getUsl() {
+  @Override
+  public String getUSL() {
     return this.usl;
   }
 

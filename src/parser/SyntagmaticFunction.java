@@ -24,7 +24,7 @@ public abstract class SyntagmaticFunction extends IEMLTuple {
     super(SyntagmaticFunction.initType(m, type));
   }
 
-  public static SyntagmaticFunction reFactory(Tuple<?> sf) throws IncompatibleSolutionException {
+  public static SyntagmaticFunction reBuild(Tuple<?> sf) throws IncompatibleSolutionException {
     try {
       IEMLStringAttribute type = (IEMLStringAttribute) sf.get("type");
       switch (type.getValue()) {

@@ -7,7 +7,10 @@ import org.json.JSONObject;
 
 import parser.JSONStructureException;
 import parser.MissingTranslationException;
+import parser.ParseException;
+import parser.Polymorpheme;
 import parser.TranslationSet;
+import util.Pair;
 
 public class Dictionary {
 
@@ -20,6 +23,7 @@ public class Dictionary {
 
     for (JSONObject obj: translations) {
       TranslationSet t = new TranslationSet(obj);
+      
       if (this.uslDict.containsKey(t.getUsl())) {
         if (this.translations.get(this.uslDict.get(t.getUsl())).equals(t))
           System.err.println("Warning: duplicate entry in input JSON file: " + t.getUsl());

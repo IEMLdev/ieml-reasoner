@@ -1,23 +1,32 @@
 package reasoner;
 
-public class Triple<T> {
-  private final T first, second, third;
+import java.util.ArrayList;
+import java.util.Iterator;
+
+public class Triple<T> implements Iterable<T> {
+  private final ArrayList<T> items;
   
   public Triple(T first, T second, T third) {
-    this.first = first;
-    this.second = second;
-    this.third = third;
+    this.items = new ArrayList<T>();
+    this.items.add(first);
+    this.items.add(second);
+    this.items.add(third);
   }
 
   public T getFirst() {
-    return first;
+    return this.items.get(0);
   }
 
   public T getSecond() {
-    return second;
+    return this.items.get(1);
   }
 
   public T getThird() {
-    return third;
+    return this.items.get(2);
+  }
+
+  @Override
+  public Iterator<T> iterator() {
+    return this.items.iterator();
   }
 }

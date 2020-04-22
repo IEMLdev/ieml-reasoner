@@ -1,5 +1,6 @@
 package parser;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -15,9 +16,9 @@ public class Process extends SyntagmaticFunction {
   private static final long serialVersionUID = -4257752045085044328L;
   public static final String typeName = "ProcessSyntagmaticFunction";
   public static final String typeRoleName = "process";
-  public static final List<String> typeRolePerValence = List.of("E:S:.", "E:T:.", "E:B:.");
-  public static final List<String> actantNames = List.of("initiator", "interactant", "recipient", "time", "location", "intention", "manner", "cause");
-  public static final List<String> actantRoles = List.of("E:.n.-", "E:.d.-", "E:.k.-", "E:.t.-", "E:.l.-", "E:.m.-", "E:.f.-", "E:.s.-");
+  public static final List<String> typeRolePerValence = Arrays.asList(new String[] {"E:S:.", "E:T:.", "E:B:."});
+  public static final List<String> actantNames = Arrays.asList(new String[] {"initiator", "interactant", "recipient", "time", "location", "intention", "manner", "cause"});
+  public static final List<String> actantRoles = Arrays.asList(new String[] {"E:.n.-", "E:.d.-", "E:.k.-", "E:.t.-", "E:.l.-", "E:.m.-", "E:.f.-", "E:.s.-"});
 
   private final IEMLNumberAttribute valence;
   private final Lexeme actor;

@@ -1,0 +1,14 @@
+package parser;
+
+import java.util.Map;
+
+public abstract class Writable extends IEMLTuple {
+
+  private static final long serialVersionUID = 1657596529626743462L;
+
+  public Writable(Map<?, ? extends IEMLUnit> m) {
+    super(m);
+  }
+
+  public abstract String getUSL();
+}
