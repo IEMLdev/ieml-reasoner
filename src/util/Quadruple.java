@@ -1,4 +1,4 @@
-package reasoner;
+package util;
 
 public class Quadruple<T> {
   private final T first, second, third, fourth;

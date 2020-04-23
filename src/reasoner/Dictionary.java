@@ -7,10 +7,7 @@ import org.json.JSONObject;
 
 import parser.JSONStructureException;
 import parser.MissingTranslationException;
-import parser.ParseException;
-import parser.Polymorpheme;
 import parser.TranslationSet;
-import util.Pair;
 
 public class Dictionary {
 

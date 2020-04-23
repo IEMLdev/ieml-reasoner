@@ -7,7 +7,7 @@ import org.json.JSONObject;
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
 
-public class Lexeme extends IEMLTuple {
+public class Lexeme extends Writable {
 
   private static final long serialVersionUID = -2259223808535886545L;
   public static final String typeName = "lexeme";
