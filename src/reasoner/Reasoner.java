@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
+import java.util.Set;
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
@@ -50,7 +51,14 @@ public class Reasoner<T extends Writable> {
   private final String typeName;
   private final HashSet<String> parseFailed;
 
-  public Reasoner(Dictionary dict, ArrayList<String> usls, WritableBuilder<T> builder, String translationLanguage) {
+  /**
+   * Initializes a Reasoner object.
+   * @param dict {@link Dictionary} object providing IEML-NL translations.
+   * @param usls the set of usls to be parsed as T objects.
+   * @param builder the builder instance to be used on analogical equations output.
+   * @param translationLanguage the selected default language for translations.
+   */
+  public Reasoner(Dictionary dict, Set<String> usls, WritableBuilder<T> builder, String translationLanguage) {
     this.dict = dict;
     this.database = new ArrayList<T>();
     this.builder = builder;
@@ -70,6 +78,14 @@ public class Reasoner<T extends Writable> {
       this.typeName = this.database.get(0).getClass().getSimpleName();
     else
       this.typeName = "Unknown";
+  }
+  
+  /**
+   * Retrieves the set of usls that could not be parsed as the current generic type.
+   * @return the set of these usls.
+   */
+  public Set<String> getFailedParses() {
+    return Collections.unmodifiableSet(this.parseFailed);
   }
 
   private Iterable<T> solveEquation(T ieml1, T ieml2, T ieml3) {
@@ -346,57 +362,100 @@ public class Reasoner<T extends Writable> {
     }
     return multiple;
   }
-
-  public void defaultGeneration() throws FileNotFoundException, IOException {
-    String filename;
-    PrintStream out;
-
-    filename = Reasoner.DEFAULT_BASENAME + "-" + this.typeName + "-list.txt.bz2";
-    out = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(filename)));
-    System.out.println("Writing database to " + filename + "...");
-    for (int i = 0; i < this.database.size(); i++) {
-      String output = this.database.get(i).getUSL() + "\t";
-      try {
-        output += this.dict.getFromUSL(this.database.get(i).getUSL()).get("fr");
-      } catch (MissingTranslationException e) {
-        output += "<no translation>";
-      }
-      out.println(output);
-    }
-    out.close();
-
-    filename = Reasoner.DEFAULT_BASENAME + "-" + this.typeName + "-polysemy.txt.bz2";
-    out = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(filename)));
-    System.out.println("Writing polysemic elements to " + filename + "...");
-    for (Entry<String, LinkedList<T>> mapping: this.searchPolysemy().entrySet()) {
-      out.println(mapping.getKey() + ":");
-      for (T term: mapping.getValue())
+  
+  public ArrayList<Thread> defaultGeneration() {
+    ArrayList<Thread> threads = new ArrayList<Thread>();
+    
+    threads.add(new Thread(new Runnable() {
+      @Override
+      public void run() {
+        String filename = Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-list.txt.bz2";
+        PrintStream out;
         try {
-          out.println("\t" + term.getUSL() + " (" + this.dict.getFromUSL(term.getUSL()).get(this.selectedLanguage) + ")");
-        } catch (MissingTranslationException e) {
-          out.close();
-          throw new RuntimeException("Unexpected exception.", e);
+          out = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(filename)));
+        } catch (IOException e) {
+          throw new RuntimeException(e);
         }
-    }
-    out.close();
+        System.out.println("Writing database to " + filename + "...");
+        for (int i = 0; i < Reasoner.this.database.size(); i++) {
+          String output = Reasoner.this.database.get(i).getUSL() + "\t";
+          try {
+            output += Reasoner.this.dict.getFromUSL(Reasoner.this.database.get(i).getUSL()).get("fr");
+          } catch (MissingTranslationException e) {
+            output += "<no translation>";
+          }
+          out.println(output);
+        }
+        out.close();
+      }
+    }));
 
-    filename = Reasoner.DEFAULT_BASENAME + "-" + this.typeName + "-proportions.txt.bz2";
-    out = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(filename)));
-    System.out.println("Writing proportions to " + filename + "...");
-    for (String proportionResult: this.displayProportions())
-      out.println(proportionResult);
-    out.close();
+    threads.add(new Thread(new Runnable() {
+      @Override
+      public void run() {
+        String filename = Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-polysemy.txt.bz2";
+        PrintStream out;
+        try {
+          out = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(filename)));
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+        System.out.println("Writing polysemic elements to " + filename + "...");
+        for (Entry<String, LinkedList<T>> mapping: Reasoner.this.searchPolysemy().entrySet()) {
+          out.println(mapping.getKey() + ":");
+          for (T term: mapping.getValue())
+            try {
+              out.println("\t" + term.getUSL() + " (" + Reasoner.this.dict.getFromUSL(term.getUSL()).get(Reasoner.this.selectedLanguage) + ")");
+            } catch (MissingTranslationException e) {
+              out.close();
+              throw new RuntimeException("Unexpected exception.", e);
+            }
+        }
+        out.close();
+      }
+    }));
 
-    filename = Reasoner.DEFAULT_BASENAME + "-" + this.typeName + "-equations.txt.bz2";
-    out = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(filename)));
-    System.out.println("Writing equations to " + filename + "...");
-    for (String equationResult: this.displayEquations())
-      out.println(equationResult);
-    out.close();
+    threads.add(new Thread(new Runnable() {
+      @Override
+      public void run() {
+        String filename = Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-proportions.txt.bz2";
+        PrintStream out;
+        try {
+          out = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(filename)));
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+        System.out.println("Writing proportions to " + filename + "...");
+        for (String proportionResult: Reasoner.this.displayProportions())
+          out.println(proportionResult);
+        out.close();
+      }
+    }));
+
+    threads.add(new Thread(new Runnable() {
+      @Override
+      public void run() {
+        String filename = Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-equations.txt.bz2";
+        PrintStream out;
+        try {
+          out = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(filename)));
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+        System.out.println("Writing equations to " + filename + "...");
+        for (String equationResult: Reasoner.this.displayEquations())
+          out.println(equationResult);
+        out.close();
+      }
+    }));
+    
+    for (Thread thread: threads)
+      thread.start();
+    return threads;
   }
 
 
-  public static void main(String[] args) throws JSONStructureException, MissingTranslationException, StyleException, IncompatibleSolutionException, FileNotFoundException, IOException {
+  public static void main(String[] args) throws JSONStructureException, InterruptedException {
     final String WORDS_SAMPLE_FILENAME = "resources/words_sample.json.bz2";
     final String DICTIONARY_FILENAME = "resources/dictionary.json.bz2";
     final String lang = "fr";
@@ -411,7 +470,7 @@ public class Reasoner<T extends Writable> {
       InputStream dictStream = new BZip2CompressorInputStream(new FileInputStream(DICTIONARY_FILENAME));
 
       ArrayList<JSONObject> jsonTranslations = new ArrayList<JSONObject>();
-      ArrayList<String> usls = new ArrayList<String>();
+      HashSet<String> usls = new HashSet<String>();
       {
         Scanner scanner = new Scanner(dictStream);
         scanner.useDelimiter("\\A");
@@ -428,15 +487,19 @@ public class Reasoner<T extends Writable> {
         scanner.close();
       }
 
-      morphemeReasoner = new Reasoner<Morpheme>(new Dictionary(jsonTranslations), usls, WritableBuilder.MORPHEME_BUILDER_INSTANCE, lang);
-      polymorphemeReasoner = new Reasoner<Polymorpheme>(new Dictionary(jsonTranslations), usls, WritableBuilder.POLYMORPHEME_BUILDER_INSTANCE, lang);
+      final Dictionary dict = new Dictionary(jsonTranslations);
+      morphemeReasoner = new Reasoner<Morpheme>(dict, usls, WritableBuilder.MORPHEME_BUILDER_INSTANCE, lang);
+      polymorphemeReasoner = new Reasoner<Polymorpheme>(dict, usls, WritableBuilder.POLYMORPHEME_BUILDER_INSTANCE, lang);
     } catch (IOException e) {
       throw new RuntimeException("Cannot open IEML JSON exports. Please generate them first.", e);
     }
 
-    morphemeReasoner.defaultGeneration();
-    polymorphemeReasoner.defaultGeneration();
-
+    ArrayList<Thread> threads = new ArrayList<Thread>();
+    threads.addAll(morphemeReasoner.defaultGeneration());
+    threads.addAll(polymorphemeReasoner.defaultGeneration());
+    
+    for (Thread thread: threads)
+      thread.join();
   }
 
   private static String formatDuration(long millisInterval) {
