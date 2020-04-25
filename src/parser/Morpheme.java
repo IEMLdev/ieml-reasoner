@@ -1,7 +1,6 @@
 package parser;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,7 +17,7 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
   private static final Pattern LAYER_0 = Pattern.compile("([SBTAUEMOFI]).*");
   private static final Pattern LAYER_1 = Pattern.compile("(a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|s|t|u|wa|we|wo|wu|x|y).*");
   private static final char[] LAYER_CHAR = {':', '.', '-', '\'', ',', '_', ';'};
-
+  
   private final IEMLStringAttribute usl;
   private final IEMLStringAttribute indexString;
 
@@ -63,11 +62,6 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
     String output = parseSingle(input);
     assert(output != null && output.length() > 0);
     
-    while (input.length() > output.length() && input.charAt(output.length()) == '+') {
-      output += '+';
-      output += parseSingle(input.substring(output.length()));
-    }
-
     IEMLStringAttribute usl = new IEMLStringAttribute(output);
     HashMap<String, IEMLUnit> map = new HashMap<String, IEMLUnit>();
     map.put("type", new IEMLStringAttribute(TYPE_NAME));
@@ -94,13 +88,9 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
       Matcher m = LAYER_0.matcher(input);
       boolean matching = m.matches();
       if (matching && input.length() > m.group(1).length() && input.charAt(m.group(1).length()) == LAYER_CHAR[layer])
-        return m.group(1) + input.charAt(m.group(1).length());
-      else {
-        HashSet<Character> s = new HashSet<Character>();
-        for (char c: LAYER_CHAR)
-          s.add(c);
+        expr = m.group(1);
+      else
         throw new ParseException("Could not read a morpheme of layer 0.");
-      }
     }
     else if (layer == 1) {
       Matcher m = LAYER_1.matcher(input);
@@ -108,7 +98,7 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
         expr = m.group(1);
     }
 
-    if (expr == null) {
+    if (expr == null) { // try to read a compound morpheme if no base morpheme was read already
       expr = parseSingleRec(input, layer-1);
       try {
         expr += parseSingleRec(input.substring(expr.length()), layer-1);
@@ -119,7 +109,14 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
     if (input.length() <= expr.length() || input.charAt(expr.length()) != LAYER_CHAR[layer])
       throw new ParseException("Could not read a morpheme of layer " + layer);
     else
-      return expr + input.charAt(expr.length());
+      expr += input.charAt(expr.length());  // adding the postfix char for the recognized layer
+    
+    while (input.length() > expr.length() && input.charAt(expr.length()) == '+') {  // trying to read an infix paradigmatic list 
+      expr += '+';
+      expr += parseSingleRec(input.substring(expr.length()), layer);
+    }
+    
+    return expr;
   }
 
   @Override
