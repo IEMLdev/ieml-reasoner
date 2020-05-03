@@ -88,27 +88,12 @@ public class Reasoner<T extends Writable> {
     return Collections.unmodifiableSet(this.parseFailed);
   }
 
-  private Iterable<T> solveEquation(T ieml1, T ieml2, T ieml3) {
+  private Iterable<Solution<T>> solveEquation(T ieml1, T ieml2, T ieml3) {
     TupleEquation<IEMLUnit, T> e = new TupleEquation<IEMLUnit, T>(ieml1, ieml2, ieml3, this.builder);
-    return new Iterable<T>() {
+    return new Iterable<Solution<T>>() {
       @Override
-      public Iterator<T> iterator() {
-        return new Iterator<T>() {
-          Iterator<? extends Solution<T>> it = e.uniqueSolutions().iterator();
-
-          @Override
-          public boolean hasNext() {
-            return this.it.hasNext();
-          }
-
-          @Override
-          public T next() {
-            if (this.hasNext())
-              return this.it.next().getContent();
-            else
-              throw new NoSuchElementException();
-          }
-        };
+      public Iterator<Solution<T>> iterator() {
+        return e.uniqueSolutions().iterator();
       }
     };
   }
@@ -206,7 +191,7 @@ public class Reasoner<T extends Writable> {
       public Iterator<String> iterator() {
         return new Iterator<String>() {
           private Iterator<Triple<Integer>> indices = Reasoner.this.computeEquations().iterator();
-          private Iterator<T> solutions = Collections.emptyIterator();
+          private Iterator<Solution<T>> solutions = Collections.emptyIterator();
           private Triple<Integer> currentIndices;
 
           @Override
@@ -227,7 +212,7 @@ public class Reasoner<T extends Writable> {
           @Override
           public String next() {
             if (this.hasNext()) {
-              T result = this.solutions.next();
+              Solution<T> result = this.solutions.next();
               String indices = "", translations = "", usls = "";
               indices = this.currentIndices.getFirst() + "\t" + this.currentIndices.getSecond() + "\t" + this.currentIndices.getThird();
               for (Integer i: this.currentIndices) {
@@ -238,7 +223,7 @@ public class Reasoner<T extends Writable> {
                 }
               }
               try {
-                translations += Reasoner.this.dict.getFromUSL(result.getUSL()).get("fr");
+                translations += Reasoner.this.dict.getFromUSL(result.getContent().getUSL()).get("fr");
               } catch (MissingTranslationException e) {
                 translations += "<no translation>"; // TODO try analogies on translations
               }
@@ -246,7 +231,7 @@ public class Reasoner<T extends Writable> {
               usls = Reasoner.this.database.get(this.currentIndices.getFirst()).getUSL() + "\t";
               usls += Reasoner.this.database.get(this.currentIndices.getSecond()).getUSL() + "\t";
               usls += Reasoner.this.database.get(this.currentIndices.getThird()).getUSL() + "\t";
-              usls += result.getUSL();
+              usls += result.getContent().getUSL();
               return indices + "\n" + translations + "\n" + usls;
             }
             else throw new NoSuchElementException();
@@ -495,7 +480,7 @@ public class Reasoner<T extends Writable> {
     }
 
     ArrayList<Thread> threads = new ArrayList<Thread>();
-    threads.addAll(morphemeReasoner.defaultGeneration());
+//    threads.addAll(morphemeReasoner.defaultGeneration());
     threads.addAll(polymorphemeReasoner.defaultGeneration());
     
     for (Thread thread: threads)

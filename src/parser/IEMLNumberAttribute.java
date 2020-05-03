@@ -1,8 +1,5 @@
 package parser;
 
-import io.github.vletard.analogy.tuple.Tuple;
-import reasoner.Dictionary;
-
 public class IEMLNumberAttribute extends Number implements IEMLUnit {
   private static final long serialVersionUID = 7421298869020559873L;
   private final Number n;
@@ -34,11 +31,6 @@ public class IEMLNumberAttribute extends Number implements IEMLUnit {
   @Override
   public long longValue() {
     return this.n.longValue();
-  }
-
-  @Override
-  public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
-    throw new RuntimeException(new MissingTranslationException());
   }
 
   @Override

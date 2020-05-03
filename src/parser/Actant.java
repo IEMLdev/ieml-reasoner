@@ -88,7 +88,6 @@ public class Actant extends SyntagmaticFunction {
     return new Actant(m, actor, dependant, independant, new IEMLStringAttribute(type_str));
   }
 
-  @Override
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
     HashMap<String, Object> m = new HashMap<String, Object>();
     m.put("actor", this.actor.mixedTranslation(lang, depth-1, dictionary));

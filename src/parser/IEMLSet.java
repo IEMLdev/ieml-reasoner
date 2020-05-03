@@ -13,9 +13,4 @@ public class IEMLSet<T extends IEMLUnit> extends ImmutableSet<T> implements IEML
   public IEMLSet(Set<T> s) {
     super(s);
   }
-
-  @Override
-  public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
-    throw new RuntimeException(new MissingTranslationException());
-  }
 }

@@ -35,9 +35,4 @@ public class Role extends IEMLSequence<IEMLStringAttribute> {
       throw new IncompatibleSolutionException(e);
     }
   }
-
-  @Override
-  public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
-    throw new RuntimeException(new MissingTranslationException());
-  }
 }

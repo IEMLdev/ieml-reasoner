@@ -41,6 +41,7 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
       m.put("index", index);
       return new Morpheme(m, usl, index);
     } catch (ClassCastException e) {
+      e.printStackTrace();
       throw new IncompatibleSolutionException(e);
     }
   }

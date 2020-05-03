@@ -102,7 +102,6 @@ public class FlexionSet extends IEMLTuple {
       return usl;
   }
 
-  @Override
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
     HashMap<Object, Object> map = new HashMap<Object, Object>();
     if (depth <= 0) {
