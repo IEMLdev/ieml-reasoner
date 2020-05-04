@@ -14,17 +14,20 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
 
   private static final long serialVersionUID = 8740154662446704759L;
   public static final String TYPE_NAME = "morpheme";
-  private static final Pattern LAYER_0 = Pattern.compile("([SBTAUEMOFI]).*");
+  private static final Pattern LAYER_0_SINGULAR = Pattern.compile("([SBTAUE]).*");
+  private static final Pattern LAYER_0_PARADIGM = Pattern.compile("([MOFI]).*");
   private static final Pattern LAYER_1 = Pattern.compile("(a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|s|t|u|wa|we|wo|wu|x|y).*");
   private static final char[] LAYER_CHAR = {':', '.', '-', '\'', ',', '_', ';'};
   
   private final IEMLStringAttribute usl;
   private final IEMLStringAttribute indexString;
+  private final IEMLBooleanAttribute paradigm;
 
-  private Morpheme(HashMap<String, IEMLUnit> m, IEMLStringAttribute usl, IEMLStringAttribute indexString) {
+  private Morpheme(HashMap<String, IEMLUnit> m, IEMLStringAttribute usl, IEMLStringAttribute indexString, IEMLBooleanAttribute paradigm) {
     super(m);
     this.usl = usl;
     this.indexString = indexString;
+    this.paradigm = paradigm;
   }
 
   public static Morpheme reFactory(Tuple<?> t) throws IncompatibleSolutionException {
@@ -34,12 +37,14 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
 
       final IEMLStringAttribute usl = (IEMLStringAttribute) t.get("content");
       final IEMLStringAttribute index = (IEMLStringAttribute) t.get("index");
+      final IEMLBooleanAttribute paradigm = (IEMLBooleanAttribute) t.get("paradigm");
 
       HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
       m.put("type", type);
       m.put("content", usl);
       m.put("index", index);
-      return new Morpheme(m, usl, index);
+      m.put("paradigm", paradigm);
+      return new Morpheme(m, usl, index, paradigm);
     } catch (ClassCastException e) {
       e.printStackTrace();
       throw new IncompatibleSolutionException(e);
@@ -47,20 +52,23 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
   }
 
   public static Morpheme factory(JSONObject obj){
-    String type_str = obj.getString("type");
-    assert(type_str.contentEquals(TYPE_NAME));
-
-    final IEMLStringAttribute usl = new IEMLStringAttribute(obj.getString("ieml"));
-    final IEMLStringAttribute index = new IEMLStringAttribute(obj.getString("index"));
-    HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
-    m.put("type", new IEMLStringAttribute(type_str));
-    m.put("content", usl);
-    m.put("index", index);
-    return new Morpheme(m, usl, index);
+    throw new UnsupportedOperationException();
+//    String type_str = obj.getString("type");
+//    assert(type_str.contentEquals(TYPE_NAME));
+//
+//    final IEMLStringAttribute usl = new IEMLStringAttribute(obj.getString("ieml"));
+//    final IEMLStringAttribute index = new IEMLStringAttribute(obj.getString("index"));
+//    HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+//    m.put("type", new IEMLStringAttribute(type_str));
+//    m.put("content", usl);
+//    m.put("index", index);
+//    return new Morpheme(m, usl, index);
   }
 
   public static Pair<Morpheme, Integer> parse(String input) throws ParseException {
-    String output = parseSingle(input);
+    Pair<String, Boolean> result = parseSingle(input);
+    String output = result.getFirst();
+    IEMLBooleanAttribute paradigm = new IEMLBooleanAttribute(result.getSecond());
     assert(output != null && output.length() > 0);
     
     IEMLStringAttribute usl = new IEMLStringAttribute(output);
@@ -68,10 +76,11 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
     map.put("type", new IEMLStringAttribute(TYPE_NAME));
     map.put("content", usl);
     map.put("index", usl);
-    return new Pair<Morpheme, Integer>(new Morpheme(map, usl, usl), usl.getValue().length());
+    map.put("paradigm", paradigm);
+    return new Pair<Morpheme, Integer>(new Morpheme(map, usl, usl, paradigm), usl.getValue().length());
   }
 
-  private static String parseSingle(String input) throws ParseException {
+  private static Pair<String, Boolean> parseSingle(String input) throws ParseException {
     for (int layer = 6; layer >= 0; layer--) {
       try {
         return parseSingleRec(input, layer);
@@ -80,15 +89,17 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
     throw new ParseException("Could not read a valid morpheme.");
   }
 
-  private static String parseSingleRec(String input, int layer) throws ParseException {
+  private static Pair<String, Boolean> parseSingleRec(String input, int layer) throws ParseException {
     if (layer < 0 || layer > 6)
       throw new RuntimeException("Invalid parameter layer: " + layer);
 
+    Boolean paradigm = false;
     String expr = null;
     if (layer == 0) {
-      Matcher m = LAYER_0.matcher(input);
-      boolean matching = m.matches();
-      if (matching && input.length() > m.group(1).length() && input.charAt(m.group(1).length()) == LAYER_CHAR[layer])
+      Matcher m = LAYER_0_SINGULAR.matcher(input);
+      if (!m.matches())
+        m = LAYER_0_PARADIGM.matcher(input);
+      if (m.matches() && input.length() > m.group(1).length() && input.charAt(m.group(1).length()) == LAYER_CHAR[layer])
         expr = m.group(1);
       else
         throw new ParseException("Could not read a morpheme of layer 0.");
@@ -100,10 +111,17 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
     }
 
     if (expr == null) { // try to read a compound morpheme if no base morpheme was read already
-      expr = parseSingleRec(input, layer-1);
+      Pair<String, Boolean> result = parseSingleRec(input, layer-1);
+      expr = result.getFirst();
+      paradigm = paradigm || result.getSecond();
       try {
-        expr += parseSingleRec(input.substring(expr.length()), layer-1);
-        expr += parseSingleRec(input.substring(expr.length()), layer-1);
+        result = parseSingleRec(input.substring(expr.length()), layer-1);
+        expr += result.getFirst();
+        paradigm = paradigm || result.getSecond();
+        
+        result = parseSingleRec(input.substring(expr.length()), layer-1);
+        expr += result.getFirst();
+        paradigm = paradigm || result.getSecond();
       } catch (ParseException e) {}
     }
 
@@ -113,11 +131,16 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
       expr += input.charAt(expr.length());  // adding the postfix char for the recognized layer
     
     while (input.length() > expr.length() && input.charAt(expr.length()) == '+') {  // trying to read an infix paradigmatic list 
-      expr += '+';
-      expr += parseSingleRec(input.substring(expr.length()), layer);
+      Pair<String, Boolean> result = parseSingleRec(input.substring(expr.length()), layer);
+      expr += '+' + result.getFirst();
+      paradigm = true;
     }
     
-    return expr;
+    return new Pair<String, Boolean>(expr, paradigm);
+  }
+  
+  public boolean isParadigm() {
+    return this.paradigm.booleanValue();
   }
 
   @Override

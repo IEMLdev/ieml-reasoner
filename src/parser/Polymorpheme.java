@@ -19,7 +19,6 @@ public class Polymorpheme extends Writable {
 
   private static final long serialVersionUID = -3319789347573674986L;
   public static final String typeName = "polymorpheme";
-  public static final Pattern BLANK_PATTERN = Pattern.compile("(\\s*).*");
 
   private final String usl;
   private final MorphemeSet constant;

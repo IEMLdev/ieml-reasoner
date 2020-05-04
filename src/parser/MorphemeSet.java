@@ -4,12 +4,14 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.github.vletard.analogy.set.ImmutableSet;
 import util.Pair;
 
 public class MorphemeSet extends IEMLSet<Morpheme> {
   private static final long serialVersionUID = -7540455236524511294L;
+  private static final Pattern BLANK_PATTERN = Pattern.compile("(\\s*).*");
 
   public MorphemeSet() {
     super(Collections.emptySet());
@@ -25,8 +27,10 @@ public class MorphemeSet extends IEMLSet<Morpheme> {
     try {
       while (true) {
         Pair<Morpheme, Integer> result = Morpheme.parse(input.substring(offset));
+        if (result.getFirst().isParadigm())
+          throw new ParseException("A morpheme set can only contain singular sequences.");
         offset += result.getSecond();
-        Matcher m = Polymorpheme.BLANK_PATTERN.matcher(input.substring(offset));
+        Matcher m = BLANK_PATTERN.matcher(input.substring(offset));
         boolean matching = m.matches();
         assert(matching);
         offset += m.group(1).length();
