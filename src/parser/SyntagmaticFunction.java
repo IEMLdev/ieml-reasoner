@@ -7,6 +7,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import io.github.vletard.analogy.tuple.Tuple;
+import reasoner.Dictionary;
 
 public abstract class SyntagmaticFunction extends IEMLTuple {
   // note, it may not be mandatory to separate SyntagmaticFunction from Process Actant and Quality
@@ -56,4 +57,6 @@ public abstract class SyntagmaticFunction extends IEMLTuple {
       throw new RuntimeException("Unsupported syntagmatic function: " + type);
     }
   }
+
+  protected abstract Object mixedTranslation(String lang, int i, Dictionary dictionary);
 }

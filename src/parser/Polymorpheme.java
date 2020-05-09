@@ -3,11 +3,6 @@ package parser;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import io.github.vletard.analogy.set.ImmutableSet;
@@ -19,15 +14,12 @@ public class Polymorpheme extends Writable {
 
   private static final long serialVersionUID = -3319789347573674986L;
   public static final String typeName = "polymorpheme";
-  static final Pattern BLANK_PATTERN = Pattern.compile("(\\s*).*");
-  static final Pattern GROUP_OPEN = Pattern.compile("(\\s*m\\d+\\().*");
-  static final Pattern GROUP_CLOSE = Pattern.compile("(\\)).*");
 
   private final String usl;
-  private final HashSet<Morpheme> constant;
-  private final ArrayList<HashSet<Morpheme>> groups;
+  private final MorphemeSet constant;
+  private final IEMLSet<PolymorphemeGroup> groups;
 
-  private Polymorpheme(HashMap<Object, IEMLUnit> m, HashSet<Morpheme> constant, ArrayList<HashSet<Morpheme>> groups, String usl) {
+  private Polymorpheme(HashMap<Object, IEMLUnit> m, MorphemeSet constant, IEMLSet<PolymorphemeGroup> groups, String usl) {
     super(m);
     this.usl = usl;
     this.constant = constant;
@@ -39,21 +31,14 @@ public class Polymorpheme extends Writable {
     return this.usl;
   }
 
-  private static HashSet<Morpheme> restoreMorphemeSet(ImmutableSet<?> immutableSet) throws IncompatibleSolutionException {
-    HashSet<Morpheme> s = new HashSet<Morpheme>();
-    for (Object m: (ImmutableSet<?>) immutableSet)
-      s.add(Morpheme.reFactory((Tuple<?>) m));
-    return s;
-  }
-
-  private static HashSet<Morpheme> extractMorphemeSet(JSONArray arr){
-    HashSet<Morpheme> s = new HashSet<Morpheme>();
-    for (int i = 0; i < arr.length(); i++) {
-      boolean absent = s.add(Morpheme.factory(arr.getJSONObject(i)));
-      assert(absent);
-    }
-    return s;
-  }
+//  private static HashSet<Morpheme> extractMorphemeSet(JSONArray arr){
+//    HashSet<Morpheme> s = new HashSet<Morpheme>();
+//    for (int i = 0; i < arr.length(); i++) {
+//      boolean absent = s.add(Morpheme.factory(arr.getJSONObject(i)));
+//      assert(absent);
+//    }
+//    return s;
+//  }
 
   private static boolean checkStyle(JSONObject obj) throws JSONStructureException {
     String type = obj.getString("type");
@@ -71,124 +56,114 @@ public class Polymorpheme extends Writable {
       throw new JSONStructureException();
   }
 
-  public static Polymorpheme reFactory(Tuple<?> t) throws IncompatibleSolutionException {
+  public static Polymorpheme reBuild(Tuple<?> t) throws IncompatibleSolutionException {
     try {
       final IEMLStringAttribute type = (IEMLStringAttribute) t.get("type");
-      final HashSet<Morpheme> constant = restoreMorphemeSet((ImmutableSet<?>) t.get("constant"));
+      final MorphemeSet constant = MorphemeSet.reFactory((ImmutableSet<Morpheme>) t.get("constant"));
+      final IEMLSet<PolymorphemeGroup> groups;
 
-      HashMap<Object, IEMLUnit> m = new HashMap<Object, IEMLUnit>();
-      m.put("type", type);
-      m.put("constant", new IEMLSet<Morpheme>(constant));
-
-      final ArrayList<HashSet<Morpheme>> groups = new ArrayList<HashSet<Morpheme>>();
-      for (int i = 0; t.containsKey(i); i++) {
-        HashSet<Morpheme> set = restoreMorphemeSet((ImmutableSet<?>) t.get(i));
-        groups.add(set);
-        m.put(i, new IEMLSet<Morpheme>(set));
+      {
+        HashSet<PolymorphemeGroup> group_set = new HashSet<PolymorphemeGroup>();
+        for (Tuple<IEMLUnit> group_tuple: (ImmutableSet<Tuple<IEMLUnit>>) t.get("groups"))
+          group_set.add(PolymorphemeGroup.reBuild(group_tuple));
+        groups = new IEMLSet<PolymorphemeGroup>(group_set);
       }
+      
+      HashMap<Object, IEMLUnit> map = new HashMap<Object, IEMLUnit>();
+      map.put("type", type);
+      map.put("constant", constant);
+      map.put("groups", groups);
 
       String usl = "";
-      for (Morpheme morpheme: new TreeSet<Morpheme>(constant)) {
+      for (Morpheme morpheme: constant) {
         if (!usl.contentEquals(""))
           usl += " ";
         usl += morpheme.getUSL();
       }
-      if (usl.contentEquals("E:"))
-        usl = "";
-      return new Polymorpheme(m, constant, groups, usl);
+      
+      for (PolymorphemeGroup group: groups) {
+        if (!usl.contentEquals(""))
+          usl += " ";
+        usl += "m" + group.getMultiplicity() + "(";
+        
+        String groupUSL = "";
+        for (Morpheme morpheme: group.getMorphemes()) {
+          if (!groupUSL.contentEquals(""))
+            groupUSL += " ";
+          groupUSL += morpheme.getUSL();
+        }
+        usl += groupUSL + ")";
+      }
+      
+      return new Polymorpheme(map, constant, groups, usl);
     } catch (ClassCastException e) {
       throw new IncompatibleSolutionException(e);
     }
   }
 
-  public static Polymorpheme factory(JSONObject obj) throws StyleException, JSONStructureException {
-    if (!checkStyle(obj))
-      throw new StyleException();
-
-    String type_str = "polymorpheme";  // the type of a Polymorpheme is always polymorpheme
-
-    final String usl = obj.getString("ieml");
-    final IEMLStringAttribute type = new IEMLStringAttribute(type_str);
-    final HashSet<Morpheme> constant;
-    if (obj.getString("type").contentEquals("morpheme") && obj.isNull("constant")) {
-      // style exception
-      constant = new HashSet<Morpheme>();
-      constant.add(Morpheme.factory(obj));
-    }
-    else
-      constant = extractMorphemeSet(obj.getJSONArray("constant"));
-    final ArrayList<HashSet<Morpheme>> groups = new ArrayList<HashSet<Morpheme>>();
-
-    HashMap<Object, IEMLUnit> m = new HashMap<Object, IEMLUnit>();
-    m.put("type", type);
-    m.put("constant", new IEMLSet<Morpheme>(constant));
-
-    final JSONArray groups_arr = obj.getJSONArray("groups");
-    for (int i = 0; i < groups_arr.length(); i++) {
-      HashSet<Morpheme> set = extractMorphemeSet(groups_arr.getJSONArray(i));
-      groups.add(set);
-      m.put(i, new IEMLSet<Morpheme>(set));
-    }
-
-    return new Polymorpheme(m, constant, groups, usl);
+  public static Polymorpheme factory(JSONObject obj) {
+    throw new UnsupportedOperationException();
+//    if (!checkStyle(obj))
+//      throw new StyleException();
+//
+//    String type_str = "polymorpheme";  // the type of a Polymorpheme is always polymorpheme
+//
+//    final String usl = obj.getString("ieml");
+//    final IEMLStringAttribute type = new IEMLStringAttribute(type_str);
+//    final HashSet<Morpheme> constant;
+//    if (obj.getString("type").contentEquals("morpheme") && obj.isNull("constant")) {
+//      // style exception
+//      constant = new HashSet<Morpheme>();
+//      constant.add(Morpheme.factory(obj));
+//    }
+//    else
+//      constant = extractMorphemeSet(obj.getJSONArray("constant"));
+//    final ArrayList<HashSet<Morpheme>> groups = new ArrayList<HashSet<Morpheme>>();
+//
+//    HashMap<Object, IEMLUnit> m = new HashMap<Object, IEMLUnit>();
+//    m.put("type", type);
+//    m.put("constant", new IEMLSet<Morpheme>(constant));
+//
+//    final JSONArray groups_arr = obj.getJSONArray("groups");
+//    for (int i = 0; i < groups_arr.length(); i++) {
+//      HashSet<Morpheme> set = extractMorphemeSet(groups_arr.getJSONArray(i));
+//      groups.add(set);
+//      m.put(i, new IEMLSet<Morpheme>(set));
+//    }
+//
+//    return new Polymorpheme(m, constant, groups, usl);
   }
 
   public static Pair<Polymorpheme, Integer> parse(String input) throws ParseException {
     int offset = 0;
-    HashSet<Morpheme> constant = new HashSet<Morpheme>();
+    MorphemeSet constant;
     try {
-      Pair<HashSet<Morpheme>, Integer> result = parseMorphemeSet(input);
+      Pair<MorphemeSet, Integer> result = MorphemeSet.parse(input);
       constant = result.getFirst();
       offset += result.getSecond();
-    } catch (ParseException e) {}
-
-    final ArrayList<HashSet<Morpheme>> groups = new ArrayList<HashSet<Morpheme>>();
-    while (true) {
-      Matcher m = GROUP_OPEN.matcher(input.substring(offset));
-      if (!m.matches())
-        break;
-      offset += m.group(1).length();
-      Pair<HashSet<Morpheme>, Integer> result = parseMorphemeSet(input.substring(offset));
-      groups.add(result.getFirst());
-      offset += result.getSecond();
-      m = GROUP_CLOSE.matcher(input.substring(offset));
-      if (!m.matches())
-        throw new ParseException("Could not read a valid polymorpheme.");
-      offset += m.group(1).length();
+    } catch (ParseException e) {
+      constant = new MorphemeSet();
     }
 
-    if (offset == 0)
-      throw new ParseException("A polymorpheme cannot have length 0.");
-    
-    HashMap<Object, IEMLUnit> map = new HashMap<Object, IEMLUnit>();
-    map.put("type", new IEMLStringAttribute(typeName));
-    map.put("constant", new IEMLSet<Morpheme>(constant));
-
-    for (int i = 0; i < groups.size(); i++)
-      map.put(i, new IEMLSet<Morpheme>(groups.get(i)));
-
-    return new Pair<Polymorpheme, Integer>(new Polymorpheme(map, constant, groups, input.substring(0, offset)), offset);
-  }
-
-  private static Pair<HashSet<Morpheme>, Integer> parseMorphemeSet(String input) throws ParseException {
-    int offset = 0;
-    HashSet<Morpheme> morphemes = new HashSet<Morpheme>();
+    final HashSet<PolymorphemeGroup> g = new HashSet<PolymorphemeGroup>();
     try {
       while (true) {
-        Pair<Morpheme, Integer> result = Morpheme.parse(input.substring(offset));
+        Pair<PolymorphemeGroup, Integer> result = PolymorphemeGroup.parse(input.substring(offset));
+        g.add(result.getFirst());
         offset += result.getSecond();
-        Matcher m = BLANK_PATTERN.matcher(input.substring(offset));
-        boolean matching = m.matches();
-        assert(matching);
-        offset += m.group(1).length();
-        morphemes.add(result.getFirst());
       }
-    } catch (ParseException e) {
-      if (offset == 0)
-        throw new ParseException("Could not read a valid morpheme set.", e);
-      else
-        return new Pair<HashSet<Morpheme>, Integer>(morphemes, offset);
-    }
+    } catch (ParseException e ) {};
+
+    if (offset == 0)
+      throw new ParseException(Polymorpheme.class, offset);
+
+    IEMLSet<PolymorphemeGroup> groups = new IEMLSet<PolymorphemeGroup>(g);
+    HashMap<Object, IEMLUnit> map = new HashMap<Object, IEMLUnit>();
+    map.put("type", new IEMLStringAttribute(typeName));
+    map.put("constant", constant);
+    map.put("groups", groups);
+
+    return new Pair<Polymorpheme, Integer>(new Polymorpheme(map, constant, groups, input.substring(0, offset)), offset);
   }
 
   @Override
@@ -207,10 +182,11 @@ public class Polymorpheme extends Writable {
       constant.add(m.mixedTranslation(lang, depth-1, dictionary));
 
     ArrayList<HashSet<Object>> groups = new ArrayList<HashSet<Object>>();
-    for (HashSet<Morpheme> s: this.groups) {
+    for (PolymorphemeGroup g: this.groups) {
       HashSet<Object> group = new HashSet<Object>();
-      for (Morpheme m: s)
+      for (Morpheme m: g.getMorphemes())
         group.add(m.mixedTranslation(lang, depth-1, dictionary));
+      groups.add(group);
     }
 
     map.put("constant", new ImmutableSet<Object>(constant));

@@ -26,7 +26,7 @@ public class Quality extends SyntagmaticFunction {
     try {
       assert(type.getValue().contentEquals(typeName));
 
-      final Lexeme actor = Lexeme.reFactory((Tuple<?>) t.get("actor"));
+      final Lexeme actor = Lexeme.reBuild((Tuple<?>) t.get("actor"));
 
       HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
       m.put("actor", actor);
@@ -47,7 +47,6 @@ public class Quality extends SyntagmaticFunction {
     return new Quality(m, actor, new IEMLStringAttribute(type_str));
   };
 
-  @Override
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
     HashMap<String, Object> m = new HashMap<String, Object>();
     m.put("actor", this.actor.mixedTranslation(lang, depth-1, dictionary));

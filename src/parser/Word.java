@@ -6,11 +6,14 @@ import org.json.JSONObject;
 import io.github.vletard.analogy.sequence.Sequence;
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
+import util.Pair;
 
 public class Word extends Writable {
 
   private static final long serialVersionUID = 8351186437917149613L;
   public static final String typeName = "word";
+  public static final String USL_START = "[";
+  public static final String USL_END = "]";
 
   private final String usl;
   private final Role role;
@@ -31,7 +34,11 @@ public class Word extends Writable {
     this.usl = usl;
   }
 
-  public static Word reBuild(Tuple<?> t) throws IncompatibleSolutionException, StyleException {
+  public static Pair<Word, Integer> parse(String input) {
+    throw new UnsupportedOperationException();
+  }
+
+  public static Word reBuild(Tuple<IEMLUnit> t) throws IncompatibleSolutionException, StyleException {
     try {
       IEMLStringAttribute type = (IEMLStringAttribute) t.get("type");
       Role role = Role.reFactory((Sequence<?>) t.get("role"));

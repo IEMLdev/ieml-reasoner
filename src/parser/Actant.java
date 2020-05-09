@@ -31,7 +31,7 @@ public class Actant extends SyntagmaticFunction {
     try {
       assert(type.getValue().contentEquals(typeName));
 
-      final Lexeme actor = Lexeme.reFactory((Tuple<?>) t.get("actor"));
+      final Lexeme actor = Lexeme.reBuild((Tuple<?>) t.get("actor"));
 
       final Actant dependant;
       if (t.get("dependant") == null)
@@ -88,7 +88,6 @@ public class Actant extends SyntagmaticFunction {
     return new Actant(m, actor, dependant, independant, new IEMLStringAttribute(type_str));
   }
 
-  @Override
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
     HashMap<String, Object> m = new HashMap<String, Object>();
     m.put("actor", this.actor.mixedTranslation(lang, depth-1, dictionary));

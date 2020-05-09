@@ -35,7 +35,7 @@ public class Process extends SyntagmaticFunction {
     try {
       assert(type.getValue().equals(typeName));
 
-      final Lexeme actor = Lexeme.reFactory((Tuple<?>) t.get("actor"));
+      final Lexeme actor = Lexeme.reBuild((Tuple<?>) t.get("actor"));
       final IEMLNumberAttribute valence = (IEMLNumberAttribute) t.get("valence");
       final HashMap<String, Actant> actants = new HashMap<String, Actant>();
 
@@ -78,7 +78,6 @@ public class Process extends SyntagmaticFunction {
     return new Process(m, actor, Collections.unmodifiableMap(actants), new IEMLStringAttribute(type_str), valence);
   }
 
-  @Override
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
     HashMap<String, Object> m = new HashMap<String, Object>();
     m.put("actor", this.actor.mixedTranslation(lang, depth-1, dictionary));
