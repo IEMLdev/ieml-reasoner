@@ -11,8 +11,8 @@ import util.Pair;
 
 public class PolymorphemeGroup extends IEMLTuple {
   private static final long serialVersionUID = 2248479360540166171L;
-  private static final Pattern USL_OPEN = Pattern.compile("(\\s*m(\\d+)\\().*");
-  private static final Pattern USL_CLOSE = Pattern.compile("(\\)).*");
+  private static final Pattern OPEN_PATTERN = Pattern.compile("(\\s*m(\\d+)\\().*");
+  private static final Pattern CLOSE_PATTERN = Pattern.compile("(\\)).*");
   
   private final int multiplicity;
   private final MorphemeSet morphemes;
@@ -24,18 +24,19 @@ public class PolymorphemeGroup extends IEMLTuple {
   }
   
   public static Pair<PolymorphemeGroup, Integer> parse(String input) throws ParseException {
-    Matcher matcher = USL_OPEN.matcher(input);
+    int offset = 0;
+    Matcher matcher = OPEN_PATTERN.matcher(input);
     if (!matcher.matches())
-      throw new ParseException("Could not read a valid polymorpheme group.");
+      throw new ParseException(PolymorphemeGroup.class, offset);
     
-    int offset = matcher.group(1).length();
+    offset += matcher.group(1).length();
     int multiplicity = Integer.valueOf(matcher.group(2));
     
     Pair<MorphemeSet, Integer> result = MorphemeSet.parse(input.substring(offset));
     offset += result.getSecond();
-    matcher = USL_CLOSE.matcher(input.substring(offset));
+    matcher = CLOSE_PATTERN.matcher(input.substring(offset));
     if (!matcher.matches())
-      throw new ParseException("Could not read a valid polymorpheme group.");
+      throw new ParseException(PolymorphemeGroup.class, offset);
     offset += matcher.group(1).length();
     
     MorphemeSet morphemes = result.getFirst();
@@ -46,7 +47,7 @@ public class PolymorphemeGroup extends IEMLTuple {
     return new Pair<PolymorphemeGroup, Integer>(new PolymorphemeGroup(map, morphemes, multiplicity), offset);
   }
 
-  public static PolymorphemeGroup reFactory(Tuple<IEMLUnit> t) throws IncompatibleSolutionException {
+  public static PolymorphemeGroup reBuild(Tuple<IEMLUnit> t) throws IncompatibleSolutionException {
     try {
       final IEMLNumberAttribute multiplicity = (IEMLNumberAttribute) t.get("multiplicity");
       final MorphemeSet morphemes = MorphemeSet.reFactory((ImmutableSet<Morpheme>) t.get("morphemes"));

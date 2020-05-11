@@ -30,7 +30,7 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
     this.paradigm = paradigm;
   }
 
-  public static Morpheme reFactory(Tuple<?> t) throws IncompatibleSolutionException {
+  public static Morpheme reBuild(Tuple<?> t) throws IncompatibleSolutionException {
     try {
       final IEMLStringAttribute type = (IEMLStringAttribute) t.get("type");
       assert(type.getValue().contentEquals(TYPE_NAME));
@@ -86,7 +86,7 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
         return parseSingleRec(input, layer);
       } catch (ParseException e) {}
     }
-    throw new ParseException("Could not read a valid morpheme.");
+    throw new ParseException(Morpheme.class, 0);
   }
 
   private static Pair<String, Boolean> parseSingleRec(String input, int layer) throws ParseException {
@@ -102,7 +102,7 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
       if (m.matches() && input.length() > m.group(1).length() && input.charAt(m.group(1).length()) == LAYER_CHAR[layer])
         expr = m.group(1);
       else
-        throw new ParseException("Could not read a morpheme of layer 0.");
+        throw new ParseException(Morpheme.class, 0);
     }
     else if (layer == 1) {
       Matcher m = LAYER_1.matcher(input);
@@ -126,7 +126,7 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
     }
 
     if (input.length() <= expr.length() || input.charAt(expr.length()) != LAYER_CHAR[layer])
-      throw new ParseException("Could not read a morpheme of layer " + layer);
+      throw new ParseException(Morpheme.class, expr.length());
     else
       expr += input.charAt(expr.length());  // adding the postfix char for the recognized layer
     

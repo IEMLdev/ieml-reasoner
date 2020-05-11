@@ -28,7 +28,7 @@ public class MorphemeSet extends IEMLSet<Morpheme> {
       while (true) {
         Pair<Morpheme, Integer> result = Morpheme.parse(input.substring(offset));
         if (result.getFirst().isParadigm())
-          throw new ParseException("A morpheme set can only contain singular sequences.");
+          throw new ParseException(MorphemeSet.class, offset);
         offset += result.getSecond();
         Matcher m = BLANK_PATTERN.matcher(input.substring(offset));
         boolean matching = m.matches();
@@ -38,7 +38,7 @@ public class MorphemeSet extends IEMLSet<Morpheme> {
       }
     } catch (ParseException e) {
       if (offset == 0)
-        throw new ParseException("Could not read a valid morpheme set.", e);
+        throw e;
       else
         return new Pair<MorphemeSet, Integer>(new MorphemeSet(morphemes), offset);
     }

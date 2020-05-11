@@ -31,7 +31,7 @@ public class Actant extends SyntagmaticFunction {
     try {
       assert(type.getValue().contentEquals(typeName));
 
-      final Lexeme actor = Lexeme.reFactory((Tuple<?>) t.get("actor"));
+      final Lexeme actor = Lexeme.reBuild((Tuple<?>) t.get("actor"));
 
       final Actant dependant;
       if (t.get("dependant") == null)

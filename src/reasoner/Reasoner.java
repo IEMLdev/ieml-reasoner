@@ -1,7 +1,6 @@
 package reasoner;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,14 +25,12 @@ import io.github.vletard.analogy.DefaultProportion;
 import io.github.vletard.analogy.Solution;
 import io.github.vletard.analogy.tuple.TupleEquation;
 import parser.IEMLUnit;
-import parser.IncompatibleSolutionException;
 import parser.JSONStructureException;
 import parser.Lexeme;
 import parser.MissingTranslationException;
 import parser.Morpheme;
 import parser.ParseException;
 import parser.Polymorpheme;
-import parser.StyleException;
 import parser.Word;
 import parser.Writable;
 import parser.WritableBuilder;
@@ -79,7 +76,7 @@ public class Reasoner<T extends Writable> {
     else
       this.typeName = "Unknown";
   }
-  
+
   /**
    * Retrieves the set of usls that could not be parsed as the current generic type.
    * @return the set of these usls.
@@ -347,10 +344,10 @@ public class Reasoner<T extends Writable> {
     }
     return multiple;
   }
-  
+
   public ArrayList<Thread> defaultGeneration() {
     ArrayList<Thread> threads = new ArrayList<Thread>();
-    
+
     threads.add(new Thread(new Runnable() {
       @Override
       public void run() {
@@ -433,7 +430,7 @@ public class Reasoner<T extends Writable> {
         out.close();
       }
     }));
-    
+
     for (Thread thread: threads)
       thread.start();
     return threads;
@@ -459,7 +456,7 @@ public class Reasoner<T extends Writable> {
       {
         Scanner scanner = new Scanner(dictStream);
         scanner.useDelimiter("\\A");
-        JSONArray arr = new JSONArray(scanner.next());
+        JSONArray arr = new JSONArray(scanner.next());  
         for (int i = 0; i < arr.length(); i++) {
           JSONObject obj = arr.getJSONObject(i);
           jsonTranslations.add(obj);
@@ -475,14 +472,16 @@ public class Reasoner<T extends Writable> {
       final Dictionary dict = new Dictionary(jsonTranslations);
       morphemeReasoner = new Reasoner<Morpheme>(dict, usls, WritableBuilder.MORPHEME_BUILDER_INSTANCE, lang);
       polymorphemeReasoner = new Reasoner<Polymorpheme>(dict, usls, WritableBuilder.POLYMORPHEME_BUILDER_INSTANCE, lang);
+      lexemeReasoner = new Reasoner<Lexeme>(dict, usls, WritableBuilder.LEXEME_BUILDER_INSTANCE, lang);
     } catch (IOException e) {
       throw new RuntimeException("Cannot open IEML JSON exports. Please generate them first.", e);
     }
 
     ArrayList<Thread> threads = new ArrayList<Thread>();
-//    threads.addAll(morphemeReasoner.defaultGeneration());
+    threads.addAll(morphemeReasoner.defaultGeneration());
     threads.addAll(polymorphemeReasoner.defaultGeneration());
-    
+    threads.addAll(lexemeReasoner.defaultGeneration());
+
     for (Thread thread: threads)
       thread.join();
   }

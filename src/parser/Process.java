@@ -35,7 +35,7 @@ public class Process extends SyntagmaticFunction {
     try {
       assert(type.getValue().equals(typeName));
 
-      final Lexeme actor = Lexeme.reFactory((Tuple<?>) t.get("actor"));
+      final Lexeme actor = Lexeme.reBuild((Tuple<?>) t.get("actor"));
       final IEMLNumberAttribute valence = (IEMLNumberAttribute) t.get("valence");
       final HashMap<String, Actant> actants = new HashMap<String, Actant>();
 

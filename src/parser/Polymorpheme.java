@@ -3,11 +3,6 @@ package parser;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import io.github.vletard.analogy.set.ImmutableSet;
@@ -36,14 +31,14 @@ public class Polymorpheme extends Writable {
     return this.usl;
   }
 
-  private static HashSet<Morpheme> extractMorphemeSet(JSONArray arr){
-    HashSet<Morpheme> s = new HashSet<Morpheme>();
-    for (int i = 0; i < arr.length(); i++) {
-      boolean absent = s.add(Morpheme.factory(arr.getJSONObject(i)));
-      assert(absent);
-    }
-    return s;
-  }
+//  private static HashSet<Morpheme> extractMorphemeSet(JSONArray arr){
+//    HashSet<Morpheme> s = new HashSet<Morpheme>();
+//    for (int i = 0; i < arr.length(); i++) {
+//      boolean absent = s.add(Morpheme.factory(arr.getJSONObject(i)));
+//      assert(absent);
+//    }
+//    return s;
+//  }
 
   private static boolean checkStyle(JSONObject obj) throws JSONStructureException {
     String type = obj.getString("type");
@@ -61,7 +56,7 @@ public class Polymorpheme extends Writable {
       throw new JSONStructureException();
   }
 
-  public static Polymorpheme reFactory(Tuple<?> t) throws IncompatibleSolutionException {
+  public static Polymorpheme reBuild(Tuple<?> t) throws IncompatibleSolutionException {
     try {
       final IEMLStringAttribute type = (IEMLStringAttribute) t.get("type");
       final MorphemeSet constant = MorphemeSet.reFactory((ImmutableSet<Morpheme>) t.get("constant"));
@@ -70,7 +65,7 @@ public class Polymorpheme extends Writable {
       {
         HashSet<PolymorphemeGroup> group_set = new HashSet<PolymorphemeGroup>();
         for (Tuple<IEMLUnit> group_tuple: (ImmutableSet<Tuple<IEMLUnit>>) t.get("groups"))
-          group_set.add(PolymorphemeGroup.reFactory(group_tuple));
+          group_set.add(PolymorphemeGroup.reBuild(group_tuple));
         groups = new IEMLSet<PolymorphemeGroup>(group_set);
       }
       
@@ -160,7 +155,7 @@ public class Polymorpheme extends Writable {
     } catch (ParseException e ) {};
 
     if (offset == 0)
-      throw new ParseException("A polymorpheme cannot have length 0.");
+      throw new ParseException(Polymorpheme.class, offset);
 
     IEMLSet<PolymorphemeGroup> groups = new IEMLSet<PolymorphemeGroup>(g);
     HashMap<Object, IEMLUnit> map = new HashMap<Object, IEMLUnit>();

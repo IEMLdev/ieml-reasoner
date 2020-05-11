@@ -2,12 +2,14 @@ package parser;
 
 public class ParseException extends Exception {
   private static final long serialVersionUID = -2059831230073491075L;
+  private final int offset;
   
-  public ParseException(String msg) {
-    super(msg);
+  public ParseException(Class<?> clazz, int offset) {
+    super(offset + ": cannot parse a valid " + clazz.getName());
+    this.offset = offset;
   }
 
-  public ParseException(String msg, Exception throwable) {
-    super(msg, throwable);
+  public int getOffset() {
+    return this.offset;
   }
 }

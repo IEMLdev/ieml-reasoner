@@ -15,14 +15,14 @@ public abstract class WritableBuilder<T extends Writable> extends SubtypeRebuild
     public Morpheme parse(String usl) throws ParseException {
       Pair<Morpheme, Integer> parse = Morpheme.parse(usl);
       if (parse.getSecond() != usl.length())
-        throw new ParseException("Cannot parse a morpheme for the full usl.");
+        throw new ParseException(Morpheme.class, parse.getSecond());
       return parse.getFirst();
     }
 
     @Override
     public Morpheme rebuild(Tuple<IEMLUnit> object) {
       try {
-        return Morpheme.reFactory(object);
+        return Morpheme.reBuild(object);
       } catch (IncompatibleSolutionException e) {
         throw new RuntimeException(e);
       }
@@ -36,14 +36,14 @@ public abstract class WritableBuilder<T extends Writable> extends SubtypeRebuild
     public Morpheme parse(String usl) throws ParseException {
       Pair<Morpheme, Integer> parse = Morpheme.parse(usl);
       if (parse.getSecond() != usl.length() || parse.getFirst().isParadigm())
-        throw new ParseException("Cannot parse a non paradigmatic morpheme for the full usl.");
+        throw new ParseException(Morpheme.class, parse.getSecond());
       return parse.getFirst();
     }
 
     @Override
     public Morpheme rebuild(Tuple<IEMLUnit> object) {
       try {
-        return Morpheme.reFactory(object);
+        return Morpheme.reBuild(object);
       } catch (IncompatibleSolutionException e) {
         throw new RuntimeException(e);
       }
@@ -56,15 +56,56 @@ public abstract class WritableBuilder<T extends Writable> extends SubtypeRebuild
     public Polymorpheme parse(String usl) throws ParseException {
       Pair<Polymorpheme, Integer> parse = Polymorpheme.parse(usl);
       if (parse.getSecond() != usl.length())
-        throw new ParseException("Cannot parse a polymorpheme for the full usl.");
+        throw new ParseException(Polymorpheme.class, parse.getSecond());
       return parse.getFirst();
     }
 
     @Override
     public Polymorpheme rebuild(Tuple<IEMLUnit> object) {
       try {
-        return Polymorpheme.reFactory(object);
+        return Polymorpheme.reBuild(object);
       } catch (IncompatibleSolutionException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  };
+
+
+  public static final WritableBuilder<Lexeme> LEXEME_BUILDER_INSTANCE = new WritableBuilder<Lexeme>() {
+
+    @Override
+    public Lexeme parse(String usl) throws ParseException {
+      Pair<Lexeme, Integer> parse = Lexeme.parse(usl);
+      if (parse.getSecond() != usl.length())
+        throw new ParseException(Lexeme.class, parse.getSecond());
+      return parse.getFirst();
+    }
+
+    @Override
+    public Lexeme rebuild(Tuple<IEMLUnit> object) {
+      try {
+        return Lexeme.reBuild(object);
+      } catch (IncompatibleSolutionException e) {
+        throw new RuntimeException("Unexpected exception.", e);
+      }
+    }
+  };
+  
+  public static final WritableBuilder<Word> WORD_BUILDER_INSTANCE = new WritableBuilder<Word>() {
+
+    @Override
+    public Word parse(String usl) throws ParseException {
+      Pair<Word, Integer> parse = Word.parse(usl);
+      if (parse.getSecond() != usl.length())
+        throw new ParseException(Word.class, parse.getSecond());
+      return parse.getFirst();
+    }
+
+    @Override
+    public Word rebuild(Tuple<IEMLUnit> object) {
+      try {
+        return Word.reBuild(object);
+      } catch (IncompatibleSolutionException | StyleException e) {
         throw new RuntimeException(e);
       }
     }

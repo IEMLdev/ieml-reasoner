@@ -1,16 +1,27 @@
 package parser;
 
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.JSONObject;
 
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
+import util.Pair;
 
 public class Lexeme extends Writable {
 
   private static final long serialVersionUID = -2259223808535886545L;
   public static final String typeName = "lexeme";
+  public static final String FLEXION_OPEN = "(";
+  public static final String FLEXION_CLOSE = ")";
+  public static final String CONTENT_OPEN = "(";
+  public static final String CONTENT_CLOSE = ")";
+  private static final Pattern FLEXION_OPEN_PATTERN = Pattern.compile("(" + Pattern.quote(FLEXION_OPEN) + ").*");
+  private static final Pattern FLEXION_CLOSE_PATTERN = Pattern.compile("(" + Pattern.quote(FLEXION_CLOSE) + ").*");
+  private static final Pattern CONTENT_OPEN_PATTERN = Pattern.compile("(" + Pattern.quote(CONTENT_OPEN) + ").*");
+  private static final Pattern CONTENT_CLOSE_PATTERN = Pattern.compile("(" + Pattern.quote(CONTENT_CLOSE) + ").*");
 
   private final String usl;
   private final Polymorpheme pm_content;
@@ -22,13 +33,51 @@ public class Lexeme extends Writable {
     this.pm_content = content;
     this.pm_flexion = flexions;
   }
-  
-  public static Lexeme reFactory(Tuple<?> t) throws IncompatibleSolutionException {
+
+  public static Pair<Lexeme, Integer> parse(String input) throws ParseException {
+    int offset = 0;
+    try {
+      Matcher matcher = FLEXION_OPEN_PATTERN.matcher(input);
+      if (!matcher.matches())
+        throw new ParseException(Lexeme.class, 0);
+
+      offset += matcher.group(1).length();
+      Pair<FlexionSet, Integer> flexionParse = FlexionSet.parse(input.substring(offset));
+      offset += flexionParse.getSecond();
+      matcher = FLEXION_CLOSE_PATTERN.matcher(input.substring(offset));
+      if (!matcher.matches())
+        throw new ParseException(Lexeme.class, 0);
+      offset += matcher.group(1).length();
+      matcher = CONTENT_OPEN_PATTERN.matcher(input.substring(offset));
+      if (!matcher.matches())
+        throw new ParseException(Lexeme.class, 0);
+      offset += matcher.group(1).length();
+
+      Pair<Polymorpheme, Integer> contentParse = Polymorpheme.parse(input.substring(offset));
+      offset += contentParse.getSecond();
+
+      matcher = CONTENT_CLOSE_PATTERN.matcher(input.substring(offset));
+      if (!matcher.matches())
+        throw new ParseException(Lexeme.class, 0);
+      offset += matcher.group(1).length();
+      
+      HashMap<String, IEMLUnit> map = new HashMap<String, IEMLUnit>();
+      map.put("type", new IEMLStringAttribute(typeName));
+      map.put("content", contentParse.getFirst());
+      map.put("flexions", flexionParse.getFirst());
+      
+      return new Pair<Lexeme, Integer>(new Lexeme(map, contentParse.getFirst(), flexionParse.getFirst(), input.substring(0, offset)), offset);
+    } catch (ParseException e) {
+      throw new ParseException(Lexeme.class, e.getOffset() + offset);
+    }
+  }
+
+  public static Lexeme reBuild(Tuple<?> t) throws IncompatibleSolutionException {
     try {
       final IEMLStringAttribute type = (IEMLStringAttribute) t.get("type");
       assert(type.getValue().contentEquals(typeName));
 
-      final Polymorpheme content = Polymorpheme.reFactory((Tuple<?>) t.get("content"));
+      final Polymorpheme content = Polymorpheme.reBuild((Tuple<?>) t.get("content"));
       final FlexionSet flexion = FlexionSet.reBuild((Tuple<?>) t.get("flexions"));
 
       HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
@@ -57,13 +106,14 @@ public class Lexeme extends Writable {
     return new Lexeme(m, content, flexion, usl);
   }
 
+  @Override
   public String getUSL() {
     String flexionsUSL = this.pm_flexion.getPseudoUSL();
     String contentUSL = this.pm_content.getUSL();
-    if (contentUSL.length() == 0)
-      return "(" + flexionsUSL + ")";
-    else
-      return "(" + flexionsUSL + ")(" + contentUSL + ")";
+    String usl = FLEXION_OPEN + flexionsUSL + FLEXION_CLOSE;
+    if (contentUSL.length() > 0)
+      usl += CONTENT_OPEN + contentUSL + CONTENT_CLOSE;
+    return usl;
   }
 
   @Override

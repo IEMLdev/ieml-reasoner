@@ -26,7 +26,7 @@ public class Quality extends SyntagmaticFunction {
     try {
       assert(type.getValue().contentEquals(typeName));
 
-      final Lexeme actor = Lexeme.reFactory((Tuple<?>) t.get("actor"));
+      final Lexeme actor = Lexeme.reBuild((Tuple<?>) t.get("actor"));
 
       HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
       m.put("actor", actor);

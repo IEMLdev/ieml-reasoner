@@ -5,8 +5,6 @@ import java.util.LinkedList;
 import org.json.JSONArray;
 
 import io.github.vletard.analogy.sequence.Sequence;
-import io.github.vletard.analogy.tuple.Tuple;
-import reasoner.Dictionary;
 
 public class Role extends IEMLSequence<IEMLStringAttribute> {
   
