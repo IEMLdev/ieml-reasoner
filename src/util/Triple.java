@@ -29,4 +29,9 @@ public class Triple<T> implements Iterable<T> {
   public Iterator<T> iterator() {
     return this.items.iterator();
   }
+  
+  @Override
+  public String toString() {
+    return this.items.toString();
+  }
 }

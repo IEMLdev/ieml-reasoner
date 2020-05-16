@@ -1,30 +1,36 @@
 package util;
 
+import java.util.ArrayList;
+
 public class Quadruple<T> {
-  private final T first, second, third, fourth;
+  private final ArrayList<T> items;
   
   public Quadruple(T first, T second, T third, T fourth) {
-    this.first = first;
-    this.second = second;
-    this.third = third;
-    this.fourth = fourth;
+    this.items = new ArrayList<T>();
+    this.items.add(first);
+    this.items.add(second);
+    this.items.add(third);
+    this.items.add(fourth);
   }
 
   public T getFirst() {
-    return first;
+    return this.items.get(0);
   }
 
   public T getSecond() {
-    return second;
+    return this.items.get(1);
   }
 
   public T getThird() {
-    return third;
+    return this.items.get(2);
   }
 
   public T getFourth() {
-    return fourth;
+    return this.items.get(3);
   }
   
-  
+  @Override
+  public String toString() {
+    return this.items.toString();
+  }
 }
