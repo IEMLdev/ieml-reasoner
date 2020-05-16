@@ -106,7 +106,8 @@ public class Reasoner<T extends Writable> {
 
           @Override
           public boolean hasNext() {
-            if (this.nextValidProportion == null && this.i < Reasoner.this.database.size() && this.j < Reasoner.this.database.size() && this.k < Reasoner.this.database.size() && this.l < Reasoner.this.database.size())
+            if (this.nextValidProportion == null && this.i < Reasoner.this.database.size() && this.j < Reasoner.this.database.size()
+                && this.k < Reasoner.this.database.size() && this.l < Reasoner.this.database.size())
               this.nextValidProportion = this.computeNext();
             return this.nextValidProportion != null;
           }
@@ -117,6 +118,7 @@ public class Reasoner<T extends Writable> {
               Quadruple<Integer> t = this.nextValidProportion;
               this.nextValidProportion = null;
               String output = "";
+              output += t.getFirst() + "\t" + t.getSecond() + "\t" + t.getThird() + "\t" + t.getFourth() + "\n";
               try {
                 output += Reasoner.this.dict.getFromUSL(Reasoner.this.database.get(t.getFirst()).getUSL()).get("fr") + " : ";
               } catch (MissingTranslationException e) {
@@ -148,33 +150,31 @@ public class Reasoner<T extends Writable> {
           }
 
           private Quadruple<Integer> computeNext() {
-            this.l ++;
-            while (this.i < Reasoner.this.database.size()) {
-              T wi = Reasoner.this.database.get(this.i);
-              if (this.j >= Reasoner.this.database.size())
-                this.j = this.i + 1;
-              while (this.j < Reasoner.this.database.size()) {
-                T wj = Reasoner.this.database.get(this.j);
-                if (this.k >= Reasoner.this.database.size())
-                  this.k = this.j + 1;
-                while (this.k < Reasoner.this.database.size()) {
-                  T wk = Reasoner.this.database.get(this.k);
-                  assert(!(this.i == this.j || this.i == this.k));
-                  if (this.l >= Reasoner.this.database.size())
-                    this.l = 0;
-                  while (this.l < Reasoner.this.database.size()) {
-                    T wl = Reasoner.this.database.get(this.l);
-                    if (new DefaultProportion<T>(wi, wj, wk, wl).isValid())
-                      return new Quadruple<Integer>(i, j, k, l);
-                    this.l ++;
+            while (true) {
+              this.l ++;
+              while (this.l >= Reasoner.this.database.size()) {
+                this.k ++;
+                while (this.k >= Reasoner.this.database.size()) {
+                  this.j ++;
+                  while (this.j >= Reasoner.this.database.size()) {
+                    this.i ++;
+                    if (this.i >= Reasoner.this.database.size())
+                      return null;  // no next quadruple
+                    else
+                      this.j = this.i + 1;
                   }
-                  this.k ++;
+                  this.k = this.j + 1;
                 }
-                this.j ++;
+                this.l = 0;
               }
-              this.i ++;
+
+              T wi = Reasoner.this.database.get(this.i);
+              T wj = Reasoner.this.database.get(this.j);
+              T wk = Reasoner.this.database.get(this.k);
+              T wl = Reasoner.this.database.get(this.l);
+              if (new DefaultProportion<T>(wi, wj, wk, wl).isValid())
+                return new Quadruple<Integer>(this.i, this.j, this.k, this.l);
             }
-            return null;
           }
         };
       }
@@ -271,50 +271,30 @@ public class Reasoner<T extends Writable> {
           }
 
           private Triple<Integer> computeNext() {
-            this.k ++;
-            while (this.i < Reasoner.this.database.size()) {
-              T wi = Reasoner.this.database.get(this.i);
-              if (this.j >= Reasoner.this.database.size())
-                this.j = this.i + 1;
-              while (this.j < Reasoner.this.database.size()) {
-                T wj = Reasoner.this.database.get(this.j);
-                if (this.k >= Reasoner.this.database.size())
-                  this.k = this.j + 1;
-                while (this.k < Reasoner.this.database.size()) {
-                  assert(!(this.i == this.j || this.i == this.k));
-                  T wk = Reasoner.this.database.get(this.k);
-                  if (Reasoner.this.solveEquation(wi, wj, wk).iterator().hasNext())
-                    return new Triple<Integer>(i, j, k);
-                  this.k ++;
-                }
+            while (true) {
+              this.k ++;
+              while (this.k >= Reasoner.this.database.size()) {
                 this.j ++;
+                while (this.j >= Reasoner.this.database.size()) {
+                  this.i ++;
+                  if (this.i >= Reasoner.this.database.size())
+                    return null;  // no next triple
+                  else
+                    this.j = this.i + 1;
+                }
+                this.k = this.j + 1;
               }
-              this.i ++;
+
+              T wi = Reasoner.this.database.get(this.i);
+              T wj = Reasoner.this.database.get(this.j);
+              T wk = Reasoner.this.database.get(this.k);
+              if (Reasoner.this.solveEquation(wi, wj, wk).iterator().hasNext())
+                return new Triple<Integer>(this.i, this.j, this.k);
             }
-            return null;
           }
         };
       }
     };
-    //      LinkedList<Triple<Integer>> productiveEquations = new LinkedList<Triple<Integer>>();
-    //
-    //      for (int i = 0; i < list.size(); i++) {
-    //        System.out.println();
-    //        for (int j = i+1; j < list.size(); j++) {
-    //          for (int k = j+1; k < list.size(); k++) {
-    //            assert(!(i == j || i == k));
-    //            T wi = list.get(i);
-    //            T wj = list.get(j);
-    //            T wk = list.get(k);
-    //            if (solveSingleEquation(wi, wj, wk).iterator().hasNext()) {
-    //              productiveEquations.add(new Triple<Integer>(i, j, k));
-    //              System.out.println(i + "/" + list.size() + " " + productiveEquations.size());
-    //            }
-    //          }
-    //        }
-    //      }
-    //
-    //      return productiveEquations;
   }
 
   public String getVerifyingStats() {
