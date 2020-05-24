@@ -229,7 +229,9 @@ public class Reasoner<T extends Writable> {
               usls += Reasoner.this.database.get(this.currentIndices.getSecond()).getUSL() + "\t";
               usls += Reasoner.this.database.get(this.currentIndices.getThird()).getUSL() + "\t";
               usls += result.getContent().getUSL();
-              return indices + "\n" + translations + "\n" + usls;
+              
+              String relations = "R1: " + result.getRelation().displayStraight() + "\nR2: " + result.getRelation().displayCrossed();
+              return indices + "\n" + translations + "\n" + usls + "\n" + relations;
             }
             else throw new NoSuchElementException();
           }
@@ -450,9 +452,9 @@ public class Reasoner<T extends Writable> {
       }
 
       final Dictionary dict = new Dictionary(jsonTranslations);
-      morphemeReasoner = new Reasoner<Morpheme>(dict, usls, WritableBuilder.MORPHEME_BUILDER_INSTANCE, lang);
-      polymorphemeReasoner = new Reasoner<Polymorpheme>(dict, usls, WritableBuilder.POLYMORPHEME_BUILDER_INSTANCE, lang);
-      lexemeReasoner = new Reasoner<Lexeme>(dict, usls, WritableBuilder.LEXEME_BUILDER_INSTANCE, lang);
+      morphemeReasoner = new Reasoner<Morpheme>(dict, usls, Morpheme.BUILDER, lang);
+      polymorphemeReasoner = new Reasoner<Polymorpheme>(dict, usls, Polymorpheme.BUILDER, lang);
+      lexemeReasoner = new Reasoner<Lexeme>(dict, usls, Lexeme.BUILDER, lang);
     } catch (IOException e) {
       throw new RuntimeException("Cannot open IEML JSON exports. Please generate them first.", e);
     }

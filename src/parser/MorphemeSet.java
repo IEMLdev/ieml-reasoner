@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.github.vletard.analogy.SubtypeRebuilder;
 import io.github.vletard.analogy.set.ImmutableSet;
 import util.Pair;
 
@@ -13,6 +14,13 @@ public class MorphemeSet extends IEMLSet<Morpheme> {
   private static final long serialVersionUID = -7540455236524511294L;
   private static final Pattern BLANK_PATTERN = Pattern.compile("(\\s*).*");
 
+  public static final SubtypeRebuilder<ImmutableSet<Morpheme>, MorphemeSet> BUILDER = new SubtypeRebuilder<ImmutableSet<Morpheme>, MorphemeSet>() {
+    @Override
+    public MorphemeSet rebuild(ImmutableSet<Morpheme> object) {
+      return new MorphemeSet(object.asSet());
+    }
+  };
+  
   public MorphemeSet() {
     super(Collections.emptySet());
   }

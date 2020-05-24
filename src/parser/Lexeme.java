@@ -1,11 +1,15 @@
 package parser;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.json.JSONObject;
 
+import io.github.vletard.analogy.SubtypeRebuilder;
+import io.github.vletard.analogy.set.ImmutableSet;
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
 import util.Pair;
@@ -22,6 +26,33 @@ public class Lexeme extends Writable {
   private static final Pattern FLEXION_CLOSE_PATTERN = Pattern.compile("(" + Pattern.quote(FLEXION_CLOSE) + ").*");
   private static final Pattern CONTENT_OPEN_PATTERN = Pattern.compile("(" + Pattern.quote(CONTENT_OPEN) + ").*");
   private static final Pattern CONTENT_CLOSE_PATTERN = Pattern.compile("(" + Pattern.quote(CONTENT_CLOSE) + ").*");
+  
+  private static final Map<Object, SubtypeRebuilder<?, ?>> BUILDER_MAP;
+  static {
+    Map<Object, SubtypeRebuilder<?, ? extends IEMLUnit>> map = new HashMap<Object, SubtypeRebuilder<?, ? extends IEMLUnit>>();
+    map.put("content", Polymorpheme.BUILDER);
+    map.put("flexions", FlexionSet.BUILDER);
+    BUILDER_MAP = Collections.unmodifiableMap(map);
+  }
+  public static final WritableBuilder<Lexeme> BUILDER = new WritableBuilder<Lexeme>(BUILDER_MAP) {
+    
+    @Override
+    public Lexeme parse(String usl) throws ParseException {
+      Pair<Lexeme, Integer> parse = Lexeme.parse(usl);
+      if (parse.getSecond() != usl.length())
+        throw new ParseException(Lexeme.class, parse.getSecond());
+      return parse.getFirst();
+    }
+
+    @Override
+    public Lexeme rebuild(Tuple<IEMLUnit> object) {
+      try {
+        return reBuild(object);
+      } catch (IncompatibleSolutionException e) {
+        throw new RuntimeException("Unexpected exception.", e);
+      }
+    }
+  };
 
   private final String usl;
   private final Polymorpheme pm_content;

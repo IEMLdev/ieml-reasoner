@@ -1,17 +1,47 @@
 package parser;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+
 import org.json.JSONObject;
 
+import io.github.vletard.analogy.SubtypeRebuilder;
 import io.github.vletard.analogy.set.ImmutableSet;
+import io.github.vletard.analogy.tuple.SubTupleRebuilder;
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
 import util.Pair;
 
 public class FlexionSet extends IEMLTuple {
   private static final long serialVersionUID = 6890558580471932997L;
+  
+  private static final Map<Object, SubtypeRebuilder<?, ?>> BUILDER_MAP;
+  static {
+    Map<Object, SubtypeRebuilder<?, ? extends IEMLUnit>> map = new HashMap<Object, SubtypeRebuilder<?, ? extends IEMLUnit>>();
+    map.put("constant", MorphemeSet.BUILDER);
+    map.put("groups", new SubtypeRebuilder<ImmutableSet<PolymorphemeGroup>, IEMLSet<PolymorphemeGroup>>() {
+      @Override
+      public IEMLSet<PolymorphemeGroup> rebuild(ImmutableSet<PolymorphemeGroup> object) {
+        return new IEMLSet<PolymorphemeGroup>(object.asSet());
+      }
+    });
+    BUILDER_MAP = Collections.unmodifiableMap(map);
+  }
+  
+  public static final SubTupleRebuilder<IEMLUnit, FlexionSet> BUILDER = new SubTupleRebuilder<IEMLUnit, FlexionSet>(BUILDER_MAP) {
+
+    @Override
+    public FlexionSet rebuild(Tuple<IEMLUnit> object) {
+      try {
+        return reBuild(object);
+      } catch (IncompatibleSolutionException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  };
 
   private final String usl;
   private final MorphemeSet constant;

@@ -1,10 +1,14 @@
 package parser;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+
 import org.json.JSONObject;
 
+import io.github.vletard.analogy.SubtypeRebuilder;
 import io.github.vletard.analogy.set.ImmutableSet;
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
@@ -14,6 +18,39 @@ public class Polymorpheme extends Writable {
 
   private static final long serialVersionUID = -3319789347573674986L;
   public static final String typeName = "polymorpheme";
+  
+  private static final Map<Object, SubtypeRebuilder<?, ?>> BUILDER_MAP;
+  static {
+    Map<Object, SubtypeRebuilder<?, ? extends IEMLUnit>> map = new HashMap<Object, SubtypeRebuilder<?, ? extends IEMLUnit>>();
+    map.put("constant", MorphemeSet.BUILDER);
+    map.put("groups", new SubtypeRebuilder<ImmutableSet<PolymorphemeGroup>, IEMLSet<PolymorphemeGroup>>() {
+      @Override
+      public IEMLSet<PolymorphemeGroup> rebuild(ImmutableSet<PolymorphemeGroup> object) {
+        return new IEMLSet<PolymorphemeGroup>(object.asSet());
+      }
+    });
+    BUILDER_MAP = Collections.unmodifiableMap(map);
+  }
+  
+  public static final WritableBuilder<Polymorpheme> BUILDER = new WritableBuilder<Polymorpheme>(BUILDER_MAP) {
+
+    @Override
+    public Polymorpheme parse(String usl) throws ParseException {
+      Pair<Polymorpheme, Integer> parse = Polymorpheme.parse(usl);
+      if (parse.getSecond() != usl.length())
+        throw new ParseException(Polymorpheme.class, parse.getSecond());
+      return parse.getFirst();
+    }
+
+    @Override
+    public Polymorpheme rebuild(Tuple<IEMLUnit> object) {
+      try {
+        return reBuild(object);
+      } catch (IncompatibleSolutionException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  };
 
   private final String usl;
   private final MorphemeSet constant;

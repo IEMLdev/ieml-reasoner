@@ -19,6 +19,44 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
   private static final Pattern LAYER_1 = Pattern.compile("(a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|s|t|u|wa|we|wo|wu|x|y).*");
   private static final char[] LAYER_CHAR = {':', '.', '-', '\'', ',', '_', ';'};
   
+  public static final WritableBuilder<Morpheme> BUILDER = new WritableBuilder<Morpheme>() {
+    @Override
+    public Morpheme parse(String usl) throws ParseException {
+      Pair<Morpheme, Integer> parse = Morpheme.parse(usl);
+      if (parse.getSecond() != usl.length())
+        throw new ParseException(Morpheme.class, parse.getSecond());
+      return parse.getFirst();
+    }
+
+    @Override
+    public Morpheme rebuild(Tuple<IEMLUnit> object) {
+      try {
+        return reBuild(object);
+      } catch (IncompatibleSolutionException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  };
+  
+  public static final WritableBuilder<Morpheme> NON_PARADIGMATIC_BUILDER = new WritableBuilder<Morpheme>() {
+    @Override
+    public Morpheme parse(String usl) throws ParseException {
+      Pair<Morpheme, Integer> parse = Morpheme.parse(usl);
+      if (parse.getSecond() != usl.length() || parse.getFirst().isParadigm())
+        throw new ParseException(Morpheme.class, parse.getSecond());
+      return parse.getFirst();
+    }
+
+    @Override
+    public Morpheme rebuild(Tuple<IEMLUnit> object) {
+      try {
+        return reBuild(object);
+      } catch (IncompatibleSolutionException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  };
+  
   private final IEMLStringAttribute usl;
   private final IEMLStringAttribute indexString;
   private final IEMLBooleanAttribute paradigm;
@@ -53,16 +91,16 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
 
   public static Morpheme factory(JSONObject obj){
     throw new UnsupportedOperationException();
-//    String type_str = obj.getString("type");
-//    assert(type_str.contentEquals(TYPE_NAME));
-//
-//    final IEMLStringAttribute usl = new IEMLStringAttribute(obj.getString("ieml"));
-//    final IEMLStringAttribute index = new IEMLStringAttribute(obj.getString("index"));
-//    HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
-//    m.put("type", new IEMLStringAttribute(type_str));
-//    m.put("content", usl);
-//    m.put("index", index);
-//    return new Morpheme(m, usl, index);
+    //    String type_str = obj.getString("type");
+    //    assert(type_str.contentEquals(TYPE_NAME));
+    //
+    //    final IEMLStringAttribute usl = new IEMLStringAttribute(obj.getString("ieml"));
+    //    final IEMLStringAttribute index = new IEMLStringAttribute(obj.getString("index"));
+    //    HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+    //    m.put("type", new IEMLStringAttribute(type_str));
+    //    m.put("content", usl);
+    //    m.put("index", index);
+    //    return new Morpheme(m, usl, index);
   }
 
   public static Pair<Morpheme, Integer> parse(String input) throws ParseException {
@@ -70,7 +108,7 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
     String output = result.getFirst();
     IEMLBooleanAttribute paradigm = new IEMLBooleanAttribute(result.getSecond());
     assert(output != null && output.length() > 0);
-    
+
     IEMLStringAttribute usl = new IEMLStringAttribute(output);
     HashMap<String, IEMLUnit> map = new HashMap<String, IEMLUnit>();
     map.put("type", new IEMLStringAttribute(TYPE_NAME));
@@ -118,7 +156,7 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
         result = parseSingleRec(input.substring(expr.length()), layer-1);
         expr += result.getFirst();
         paradigm = paradigm || result.getSecond();
-        
+
         result = parseSingleRec(input.substring(expr.length()), layer-1);
         expr += result.getFirst();
         paradigm = paradigm || result.getSecond();
@@ -129,16 +167,16 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
       throw new ParseException(Morpheme.class, expr.length());
     else
       expr += input.charAt(expr.length());  // adding the postfix char for the recognized layer
-    
+
     while (input.length() > expr.length() && input.charAt(expr.length()) == '+') {  // trying to read an infix paradigmatic list 
       Pair<String, Boolean> result = parseSingleRec(input.substring(expr.length()), layer);
       expr += '+' + result.getFirst();
       paradigm = true;
     }
-    
+
     return new Pair<String, Boolean>(expr, paradigm);
   }
-  
+
   public boolean isParadigm() {
     return this.paradigm.booleanValue();
   }
@@ -166,5 +204,10 @@ public class Morpheme extends Writable implements Comparable<Morpheme> {
   @Override
   public int compareTo(Morpheme m) {
     return this.indexString.getValue().compareTo(m.indexString.getValue());
+  }
+  
+  @Override
+  public String toString() {
+    return this.usl.toString();
   }
 }

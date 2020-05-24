@@ -47,7 +47,7 @@ public class PolymorphemeGroup extends IEMLTuple {
     return new Pair<PolymorphemeGroup, Integer>(new PolymorphemeGroup(map, morphemes, multiplicity), offset);
   }
 
-  public static PolymorphemeGroup reBuild(Tuple<IEMLUnit> t) throws IncompatibleSolutionException {
+  public static PolymorphemeGroup reBuild(Tuple<?> t) throws IncompatibleSolutionException {
     try {
       final IEMLNumberAttribute multiplicity = (IEMLNumberAttribute) t.get("multiplicity");
       final MorphemeSet morphemes = MorphemeSet.reFactory((ImmutableSet<Morpheme>) t.get("morphemes"));

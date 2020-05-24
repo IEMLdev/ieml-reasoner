@@ -1,77 +1,103 @@
 package parser;
 
+import java.util.Map;
+
 import io.github.vletard.analogy.SubtypeRebuilder;
+import io.github.vletard.analogy.tuple.SubTupleRebuilder;
 import io.github.vletard.analogy.tuple.Tuple;
 import util.Pair;
 
-public abstract class WritableBuilder<T extends Writable> extends SubtypeRebuilder<Tuple<IEMLUnit>, T> {
-
+public abstract class WritableBuilder<T extends Writable> extends SubTupleRebuilder<IEMLUnit, T> {
   public abstract T parse(String usl) throws ParseException;
   
+  public WritableBuilder() {
+    super(SubtypeRebuilder.identity());
+  }
 
-  public static final WritableBuilder<Morpheme> MORPHEME_BUILDER_INSTANCE = new WritableBuilder<Morpheme>() {
+  public WritableBuilder(Map<Object, SubtypeRebuilder<?, ?>> subordinates) {
+    super(subordinates);
+  }
 
-    @Override
-    public Morpheme parse(String usl) throws ParseException {
-      Pair<Morpheme, Integer> parse = Morpheme.parse(usl);
-      if (parse.getSecond() != usl.length())
-        throw new ParseException(Morpheme.class, parse.getSecond());
-      return parse.getFirst();
-    }
+  public WritableBuilder(Map<Object, SubtypeRebuilder<?, ?>> subordinates, SubtypeRebuilder<IEMLUnit, ? extends IEMLUnit> defaultBuilder) {
+    super(subordinates, defaultBuilder);
+  }
 
-    @Override
-    public Morpheme rebuild(Tuple<IEMLUnit> object) {
-      try {
-        return Morpheme.reBuild(object);
-      } catch (IncompatibleSolutionException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  };
-  
+//  public static final WritableBuilder<Morpheme> MORPHEME_BUILDER_INSTANCE = new WritableBuilder<Morpheme>() {
+//
+//    @Override
+//    public Morpheme parse(String usl) throws ParseException {
+//      Pair<Morpheme, Integer> parse = Morpheme.parse(usl);
+//      if (parse.getSecond() != usl.length())
+//        throw new ParseException(Morpheme.class, parse.getSecond());
+//      return parse.getFirst();
+//    }
+//
+//    @Override
+//    public Morpheme rebuild(Tuple<IEMLUnit> object) {
+//      try {
+//        return Morpheme.reBuild(object);
+//      } catch (IncompatibleSolutionException e) {
+//        throw new RuntimeException(e);
+//      }
+//    }
+//  };
+//  
+//
+//  public static final WritableBuilder<Morpheme> NON_PARADIGMATIC_MORPHEME_BUILDER_INSTANCE = new WritableBuilder<Morpheme>() {
+//
+//    @Override
+//    public Morpheme parse(String usl) throws ParseException {
+//      Pair<Morpheme, Integer> parse = Morpheme.parse(usl);
+//      if (parse.getSecond() != usl.length() || parse.getFirst().isParadigm())
+//        throw new ParseException(Morpheme.class, parse.getSecond());
+//      return parse.getFirst();
+//    }
+//
+//    @Override
+//    public Morpheme rebuild(Tuple<IEMLUnit> object) {
+//      try {
+//        return Morpheme.reBuild(object);
+//      } catch (IncompatibleSolutionException e) {
+//        throw new RuntimeException(e);
+//      }
+//    }
+//  };
 
-  public static final WritableBuilder<Morpheme> NON_PARADIGMATIC_MORPHEME_BUILDER_INSTANCE = new WritableBuilder<Morpheme>() {
-
-    @Override
-    public Morpheme parse(String usl) throws ParseException {
-      Pair<Morpheme, Integer> parse = Morpheme.parse(usl);
-      if (parse.getSecond() != usl.length() || parse.getFirst().isParadigm())
-        throw new ParseException(Morpheme.class, parse.getSecond());
-      return parse.getFirst();
-    }
-
-    @Override
-    public Morpheme rebuild(Tuple<IEMLUnit> object) {
-      try {
-        return Morpheme.reBuild(object);
-      } catch (IncompatibleSolutionException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  };
-  
-  public static final WritableBuilder<Polymorpheme> POLYMORPHEME_BUILDER_INSTANCE = new WritableBuilder<Polymorpheme>() {
-
-    @Override
-    public Polymorpheme parse(String usl) throws ParseException {
-      Pair<Polymorpheme, Integer> parse = Polymorpheme.parse(usl);
-      if (parse.getSecond() != usl.length())
-        throw new ParseException(Polymorpheme.class, parse.getSecond());
-      return parse.getFirst();
-    }
-
-    @Override
-    public Polymorpheme rebuild(Tuple<IEMLUnit> object) {
-      try {
-        return Polymorpheme.reBuild(object);
-      } catch (IncompatibleSolutionException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  };
+//  private static final SubtypeRebuilder<IEMLUnit, PolymorphemeGroup> POLYMORPHEME_DEFAULT = new SubtypeRebuilder<IEMLUnit, PolymorphemeGroup>() {
+//    @Override
+//    public PolymorphemeGroup rebuild(IEMLUnit object) {
+//      try {
+//        return PolymorphemeGroup.reBuild((Tuple<?>) object);
+//      } catch (ClassCastException e) {
+//        throw new RuntimeException(new IncompatibleSolutionException(e));
+//      } catch (IncompatibleSolutionException e) {
+//        throw new RuntimeException(e);
+//      }
+//    }
+//  };
+//  public static final WritableBuilder<Polymorpheme> POLYMORPHEME_BUILDER_INSTANCE = new WritableBuilder<Polymorpheme>(Polymorpheme.BUILDER_MAP) {
+//
+//    @Override
+//    public Polymorpheme parse(String usl) throws ParseException {
+//      Pair<Polymorpheme, Integer> parse = Polymorpheme.parse(usl);
+//      if (parse.getSecond() != usl.length())
+//        throw new ParseException(Polymorpheme.class, parse.getSecond());
+//      return parse.getFirst();
+//    }
+//
+//    @Override
+//    public Polymorpheme rebuild(Tuple<IEMLUnit> object) {
+//      try {
+//        return Polymorpheme.reBuild(object);
+//      } catch (IncompatibleSolutionException e) {
+//        throw new RuntimeException(e);
+//      }
+//    }
+//  };
 
 
-  public static final WritableBuilder<Lexeme> LEXEME_BUILDER_INSTANCE = new WritableBuilder<Lexeme>() {
+  public static final WritableBuilder<Lexeme> LEXEME_BUILDER_INSTANCE = Lexeme.BUILDER;
+      /*new WritableBuilder<Lexeme>() {
 
     @Override
     public Lexeme parse(String usl) throws ParseException {
@@ -89,7 +115,7 @@ public abstract class WritableBuilder<T extends Writable> extends SubtypeRebuild
         throw new RuntimeException("Unexpected exception.", e);
       }
     }
-  };
+  };*/
   
   public static final WritableBuilder<Word> WORD_BUILDER_INSTANCE = new WritableBuilder<Word>() {
 
