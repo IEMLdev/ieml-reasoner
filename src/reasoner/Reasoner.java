@@ -1,7 +1,10 @@
 package reasoner;
 
+import java.io.BufferedWriter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -39,6 +42,7 @@ import util.Triple;
 
 public class Reasoner<T extends Writable> {
   public static final String DEFAULT_BASENAME = "/tmp/ieml-reasoner";
+  public static final long PROGRESS_SAVING_DELAY_MILLIS = 30000;
 
   private final Dictionary dict;
   private final ArrayList<T> database;
@@ -95,7 +99,7 @@ public class Reasoner<T extends Writable> {
     };
   }
 
-  public Iterable<String> displayProportions() {
+  public Iterable<String> displayProportions(String progressFilename) {
     return new Iterable<String>() {
 
       @Override
@@ -167,6 +171,8 @@ public class Reasoner<T extends Writable> {
                 }
                 this.l = 0;
               }
+              
+              this.saveProgress();
 
               T wi = Reasoner.this.database.get(this.i);
               T wj = Reasoner.this.database.get(this.j);
@@ -176,18 +182,33 @@ public class Reasoner<T extends Writable> {
                 return new Quadruple<Integer>(this.i, this.j, this.k, this.l);
             }
           }
+
+          private long saveDelay = 0;
+          private void saveProgress() {
+            long time = System.currentTimeMillis();
+            if (time - this.saveDelay > Reasoner.PROGRESS_SAVING_DELAY_MILLIS) {
+              this.saveDelay = time;
+              try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(progressFilename));
+                writer.write(this.i + "\t" + this.j + "\t" + this.k + "\t" + this.l + "\n");
+                writer.close();
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+            }
+          }
         };
       }
     };
   }
 
-  public Iterable<String> displayEquations() {
+  public Iterable<String> displayEquations(String progressFilename) {
     return new Iterable<String>() {
 
       @Override
       public Iterator<String> iterator() {
         return new Iterator<String>() {
-          private Iterator<Triple<Integer>> indices = Reasoner.this.computeEquations().iterator();
+          private Iterator<Triple<Integer>> indices = Reasoner.this.computeEquations(progressFilename).iterator();
           private Iterator<Solution<T>> solutions = Collections.emptyIterator();
           private Triple<Integer> currentIndices;
 
@@ -245,7 +266,7 @@ public class Reasoner<T extends Writable> {
    * Note that only one equation is retained for each commutative cluster.
    * @return the list of the word triples that constitute productive equations.
    */
-  public Iterable<Triple<Integer>> computeEquations() {
+  public Iterable<Triple<Integer>> computeEquations(String progressFilename) {
     return new Iterable<Triple<Integer>>() {
 
       @Override
@@ -286,12 +307,29 @@ public class Reasoner<T extends Writable> {
                 }
                 this.k = this.j + 1;
               }
+              
+              this.saveProgress();
 
               T wi = Reasoner.this.database.get(this.i);
               T wj = Reasoner.this.database.get(this.j);
               T wk = Reasoner.this.database.get(this.k);
               if (Reasoner.this.solveEquation(wi, wj, wk).iterator().hasNext())
                 return new Triple<Integer>(this.i, this.j, this.k);
+            }
+          }
+
+          private long saveDelay = 0;
+          private void saveProgress() {
+            long time = System.currentTimeMillis();
+            if (time - this.saveDelay > Reasoner.PROGRESS_SAVING_DELAY_MILLIS) {
+              this.saveDelay = time;
+              try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(progressFilename));
+                writer.write(this.i + "\t" + this.j + "\t" + this.k + "\n");
+                writer.close();
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
             }
           }
         };
@@ -390,7 +428,7 @@ public class Reasoner<T extends Writable> {
           throw new RuntimeException(e);
         }
         System.out.println("Writing proportions to " + filename + "...");
-        for (String proportionResult: Reasoner.this.displayProportions())
+        for (String proportionResult: Reasoner.this.displayProportions(filename + ".progress"))
           out.println(proportionResult);
         out.close();
       }
@@ -407,7 +445,7 @@ public class Reasoner<T extends Writable> {
           throw new RuntimeException(e);
         }
         System.out.println("Writing equations to " + filename + "...");
-        for (String equationResult: Reasoner.this.displayEquations())
+        for (String equationResult: Reasoner.this.displayEquations(filename + ".progress"))
           out.println(equationResult);
         out.close();
       }
