@@ -38,7 +38,7 @@ public class Polymorpheme extends Writable {
     public Polymorpheme parse(String usl) throws ParseException {
       Pair<Polymorpheme, Integer> parse = Polymorpheme.parse(usl);
       if (parse.getSecond() != usl.length())
-        throw new ParseException(Polymorpheme.class, parse.getSecond());
+        throw new ParseException(Polymorpheme.class, parse.getSecond(), usl);
       return parse.getFirst();
     }
 
@@ -52,20 +52,38 @@ public class Polymorpheme extends Writable {
     }
   };
 
-  private final String usl;
   private final MorphemeSet constant;
   private final IEMLSet<PolymorphemeGroup> groups;
 
-  private Polymorpheme(HashMap<Object, IEMLUnit> m, MorphemeSet constant, IEMLSet<PolymorphemeGroup> groups, String usl) {
+  private Polymorpheme(HashMap<Object, IEMLUnit> m, MorphemeSet constant, IEMLSet<PolymorphemeGroup> groups) {
     super(m);
-    this.usl = usl;
     this.constant = constant;
     this.groups = groups;
   }
 
   @Override
   public String getUSL() {
-    return this.usl;
+    String usl = "";
+    for (Morpheme morpheme: this.constant) {
+      if (!usl.contentEquals(""))
+        usl += " ";
+      usl += morpheme.getUSL();
+    }
+    
+    for (PolymorphemeGroup group: this.groups) {
+      if (!usl.contentEquals(""))
+        usl += " ";
+      usl += "m" + group.getMultiplicity() + "(";
+      
+      String groupUSL = "";
+      for (Morpheme morpheme: group.getMorphemes()) {
+        if (!groupUSL.contentEquals(""))
+          groupUSL += " ";
+        groupUSL += morpheme.getUSL();
+      }
+      usl += groupUSL + ")";
+    }
+    return usl;
   }
 
 //  private static HashSet<Morpheme> extractMorphemeSet(JSONArray arr){
@@ -110,29 +128,8 @@ public class Polymorpheme extends Writable {
       map.put("type", type);
       map.put("constant", constant);
       map.put("groups", groups);
-
-      String usl = "";
-      for (Morpheme morpheme: constant) {
-        if (!usl.contentEquals(""))
-          usl += " ";
-        usl += morpheme.getUSL();
-      }
       
-      for (PolymorphemeGroup group: groups) {
-        if (!usl.contentEquals(""))
-          usl += " ";
-        usl += "m" + group.getMultiplicity() + "(";
-        
-        String groupUSL = "";
-        for (Morpheme morpheme: group.getMorphemes()) {
-          if (!groupUSL.contentEquals(""))
-            groupUSL += " ";
-          groupUSL += morpheme.getUSL();
-        }
-        usl += groupUSL + ")";
-      }
-      
-      return new Polymorpheme(map, constant, groups, usl);
+      return new Polymorpheme(map, constant, groups);
     } catch (ClassCastException e) {
       throw new IncompatibleSolutionException(e);
     }
@@ -192,7 +189,7 @@ public class Polymorpheme extends Writable {
     } catch (ParseException e ) {};
 
     if (offset == 0)
-      throw new ParseException(Polymorpheme.class, offset);
+      throw new ParseException(Polymorpheme.class, offset, input);
 
     IEMLSet<PolymorphemeGroup> groups = new IEMLSet<PolymorphemeGroup>(g);
     HashMap<Object, IEMLUnit> map = new HashMap<Object, IEMLUnit>();
@@ -200,7 +197,7 @@ public class Polymorpheme extends Writable {
     map.put("constant", constant);
     map.put("groups", groups);
 
-    return new Pair<Polymorpheme, Integer>(new Polymorpheme(map, constant, groups, input.substring(0, offset)), offset);
+    return new Pair<Polymorpheme, Integer>(new Polymorpheme(map, constant, groups), offset);
   }
 
   @Override
@@ -208,7 +205,7 @@ public class Polymorpheme extends Writable {
     HashMap<Object, Object> map = new HashMap<Object, Object>();
     if (depth <= 0) {
       try {
-        map.put("translations", dictionary.getFromUSL(this.usl).get(lang));
+        map.put("translations", dictionary.get(this).get(lang));
         return new Tuple<Object>(map);
       } catch (MissingTranslationException e) {
         // in case no translation exist for this word in the dictionary, the mixed translation continues deeper

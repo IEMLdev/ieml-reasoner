@@ -2,7 +2,6 @@ package reasoner;
 
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -70,6 +69,7 @@ public class Reasoner<T extends Writable> {
       try {
         T parse = builder.parse(usl);
         this.database.add(parse);
+        
       } catch (ParseException e) {
         this.parseFailed.add(usl);
       }
@@ -124,22 +124,22 @@ public class Reasoner<T extends Writable> {
               String output = "";
               output += t.getFirst() + "\t" + t.getSecond() + "\t" + t.getThird() + "\t" + t.getFourth() + "\n";
               try {
-                output += Reasoner.this.dict.getFromUSL(Reasoner.this.database.get(t.getFirst()).getUSL()).get("fr") + " : ";
+                output += Reasoner.this.dict.get(Reasoner.this.database.get(t.getFirst()).getUSL()).get("fr") + " : ";
               } catch (MissingTranslationException e) {
                 output += "<no translation> : ";
               }
               try {
-                output += Reasoner.this.dict.getFromUSL(Reasoner.this.database.get(t.getSecond()).getUSL()).get("fr") + " :: ";
+                output += Reasoner.this.dict.get(Reasoner.this.database.get(t.getSecond()).getUSL()).get("fr") + " :: ";
               } catch (MissingTranslationException e) {
                 output += "<no translation> : ";
               }
               try {
-                output += Reasoner.this.dict.getFromUSL(Reasoner.this.database.get(t.getThird()).getUSL()).get("fr") + " : ";
+                output += Reasoner.this.dict.get(Reasoner.this.database.get(t.getThird()).getUSL()).get("fr") + " : ";
               } catch (MissingTranslationException e) {
                 output += "<no translation> : ";
               }
               try {
-                output += Reasoner.this.dict.getFromUSL(Reasoner.this.database.get(t.getFourth()).getUSL()).get("fr") + "\n";
+                output += Reasoner.this.dict.get(Reasoner.this.database.get(t.getFourth()).getUSL()).get("fr") + "\n";
               } catch (MissingTranslationException e) {
                 output += "<no translation> : ";
               }
@@ -162,8 +162,10 @@ public class Reasoner<T extends Writable> {
                   this.j ++;
                   while (this.j >= Reasoner.this.database.size()) {
                     this.i ++;
-                    if (this.i >= Reasoner.this.database.size())
+                    if (this.i >= Reasoner.this.database.size()) {
+                      saveProgress(0, this.i-1, this.j-1, this.k-1, this.l-1);
                       return null;  // no next quadruple
+                    }
                     else
                       this.j = this.i + 1;
                   }
@@ -172,7 +174,7 @@ public class Reasoner<T extends Writable> {
                 this.l = 0;
               }
               
-              this.saveProgress();
+              this.saveProgress(this.i, this.j, this.k, this.l);
 
               T wi = Reasoner.this.database.get(this.i);
               T wj = Reasoner.this.database.get(this.j);
@@ -183,14 +185,18 @@ public class Reasoner<T extends Writable> {
             }
           }
 
+          private void saveProgress(int i, int j, int k, int l) {
+            this.saveProgress(PROGRESS_SAVING_DELAY_MILLIS, i, j, k, l);
+          }
+          
           private long saveDelay = 0;
-          private void saveProgress() {
+          private void saveProgress(long delay, int i, int j, int k, int l) {
             long time = System.currentTimeMillis();
-            if (time - this.saveDelay > Reasoner.PROGRESS_SAVING_DELAY_MILLIS) {
+            if (time - this.saveDelay > delay) {
               this.saveDelay = time;
               try {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(progressFilename));
-                writer.write(this.i + "\t" + this.j + "\t" + this.k + "\t" + this.l + "\n");
+                writer.write(i + "\t" + j + "\t" + k + "\t" + l + "\n");
                 writer.close();
               } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -231,18 +237,30 @@ public class Reasoner<T extends Writable> {
           public String next() {
             if (this.hasNext()) {
               Solution<T> result = this.solutions.next();
-              String indices = "", translations = "", usls = "";
+              String indices = "", translations = "", usls = "", relations = "", preexisting = "new";
+              boolean preexistingSolution = false;
+              
+              for (T item: Reasoner.this.database) {
+                if (item.getUSL().contentEquals(result.getContent().getUSL())) {
+                  preexistingSolution = true;
+                  preexisting = "in database";
+                  break;
+                }
+              }
+              
               indices = this.currentIndices.getFirst() + "\t" + this.currentIndices.getSecond() + "\t" + this.currentIndices.getThird();
               for (Integer i: this.currentIndices) {
                 try {
-                  translations += Reasoner.this.dict.getFromUSL(Reasoner.this.database.get(i).getUSL()).get("fr") + "\t";
+                  translations += Reasoner.this.dict.get(Reasoner.this.database.get(i).getUSL()).get("fr") + "\t";
                 } catch (MissingTranslationException e) {
                   translations += "<no translation>\t";
                 }
               }
               try {
-                translations += Reasoner.this.dict.getFromUSL(result.getContent().getUSL()).get("fr");
+                translations += Reasoner.this.dict.get(result.getContent().getUSL()).get("fr");
+                assert(preexistingSolution);
               } catch (MissingTranslationException e) {
+                assert(!preexistingSolution);
                 translations += "<no translation>"; // TODO try analogies on translations
               }
 
@@ -251,8 +269,8 @@ public class Reasoner<T extends Writable> {
               usls += Reasoner.this.database.get(this.currentIndices.getThird()).getUSL() + "\t";
               usls += result.getContent().getUSL();
               
-              String relations = "R1: " + result.getRelation().displayStraight() + "\nR2: " + result.getRelation().displayCrossed();
-              return indices + "\n" + translations + "\n" + usls + "\n" + relations;
+              relations = "R1: " + result.getRelation().displayStraight() + "\nR2: " + result.getRelation().displayCrossed();
+              return indices + "\n" + translations + "\n" + usls + "\n" + relations + "\n" + preexisting + "\n";
             }
             else throw new NoSuchElementException();
           }
@@ -300,15 +318,17 @@ public class Reasoner<T extends Writable> {
                 this.j ++;
                 while (this.j >= Reasoner.this.database.size()) {
                   this.i ++;
-                  if (this.i >= Reasoner.this.database.size())
-                    return null;  // no next triple
+                  if (this.i >= Reasoner.this.database.size()) {
+                    this.saveProgress(0, i-1, j-1, k-1);
+                    return null;  // no next triple 
+                  }
                   else
                     this.j = this.i + 1;
                 }
                 this.k = this.j + 1;
               }
-              
-              this.saveProgress();
+
+              this.saveProgress(this.i, this.j, this.k);
 
               T wi = Reasoner.this.database.get(this.i);
               T wj = Reasoner.this.database.get(this.j);
@@ -317,15 +337,19 @@ public class Reasoner<T extends Writable> {
                 return new Triple<Integer>(this.i, this.j, this.k);
             }
           }
+          
+          private void saveProgress(int i, int j, int k) {
+            this.saveProgress(PROGRESS_SAVING_DELAY_MILLIS, i, j, k);
+          }
 
           private long saveDelay = 0;
-          private void saveProgress() {
+          private void saveProgress(long delay, int i, int j, int k) {
             long time = System.currentTimeMillis();
-            if (time - this.saveDelay > Reasoner.PROGRESS_SAVING_DELAY_MILLIS) {
+            if (time - this.saveDelay > delay) {
               this.saveDelay = time;
               try {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(progressFilename));
-                writer.write(this.i + "\t" + this.j + "\t" + this.k + "\n");
+                writer.write(i + "\t" + j + "\t" + k + "\n");
                 writer.close();
               } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -351,7 +375,7 @@ public class Reasoner<T extends Writable> {
 
     for (T term: this.database) {
       try {
-        for (String singleTranslation: this.dict.getFromUSL(term.getUSL()).get(this.selectedLanguage)) {
+        for (String singleTranslation: this.dict.get(term.getUSL()).get(this.selectedLanguage)) {
           iemlPerTranslation.putIfAbsent(singleTranslation, new LinkedList<T>());
           LinkedList<T> iemlList = iemlPerTranslation.get(singleTranslation);
           iemlList.add(term);
@@ -382,7 +406,7 @@ public class Reasoner<T extends Writable> {
         for (int i = 0; i < Reasoner.this.database.size(); i++) {
           String output = Reasoner.this.database.get(i).getUSL() + "\t";
           try {
-            output += Reasoner.this.dict.getFromUSL(Reasoner.this.database.get(i).getUSL()).get("fr");
+            output += Reasoner.this.dict.get(Reasoner.this.database.get(i).getUSL()).get("fr");
           } catch (MissingTranslationException e) {
             output += "<no translation>";
           }
@@ -407,7 +431,7 @@ public class Reasoner<T extends Writable> {
           out.println(mapping.getKey() + ":");
           for (T term: mapping.getValue())
             try {
-              out.println("\t" + term.getUSL() + " (" + Reasoner.this.dict.getFromUSL(term.getUSL()).get(Reasoner.this.selectedLanguage) + ")");
+              out.println("\t" + term.getUSL() + " (" + Reasoner.this.dict.get(term.getUSL()).get(Reasoner.this.selectedLanguage) + ")");
             } catch (MissingTranslationException e) {
               out.close();
               throw new RuntimeException("Unexpected exception.", e);

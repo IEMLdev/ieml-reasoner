@@ -81,7 +81,7 @@ public class Word extends Writable {
     HashMap<String, Object> m = new HashMap<String, Object>();
     if (depth <= 0) {
       try {
-        m.put("translations", dictionary.getFromUSL(this.usl).get(lang));
+        m.put("translations", dictionary.get(this).get(lang));
         return new Tuple<Object>(m);
       } catch (MissingTranslationException e) {
         // in case no translation exist for this word in the dictionary, the mixed translation continues deeper

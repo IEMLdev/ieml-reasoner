@@ -27,7 +27,7 @@ public class PolymorphemeGroup extends IEMLTuple {
     int offset = 0;
     Matcher matcher = OPEN_PATTERN.matcher(input);
     if (!matcher.matches())
-      throw new ParseException(PolymorphemeGroup.class, offset);
+      throw new ParseException(PolymorphemeGroup.class, offset, input);
     
     offset += matcher.group(1).length();
     int multiplicity = Integer.valueOf(matcher.group(2));
@@ -36,7 +36,7 @@ public class PolymorphemeGroup extends IEMLTuple {
     offset += result.getSecond();
     matcher = CLOSE_PATTERN.matcher(input.substring(offset));
     if (!matcher.matches())
-      throw new ParseException(PolymorphemeGroup.class, offset);
+      throw new ParseException(PolymorphemeGroup.class, offset, input);
     offset += matcher.group(1).length();
     
     MorphemeSet morphemes = result.getFirst();

@@ -9,7 +9,6 @@ import java.util.regex.Pattern;
 import org.json.JSONObject;
 
 import io.github.vletard.analogy.SubtypeRebuilder;
-import io.github.vletard.analogy.set.ImmutableSet;
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
 import util.Pair;
@@ -40,7 +39,7 @@ public class Lexeme extends Writable {
     public Lexeme parse(String usl) throws ParseException {
       Pair<Lexeme, Integer> parse = Lexeme.parse(usl);
       if (parse.getSecond() != usl.length())
-        throw new ParseException(Lexeme.class, parse.getSecond());
+        throw new ParseException(Lexeme.class, parse.getSecond(), usl);
       return parse.getFirst();
     }
 
@@ -70,18 +69,18 @@ public class Lexeme extends Writable {
     try {
       Matcher matcher = FLEXION_OPEN_PATTERN.matcher(input);
       if (!matcher.matches())
-        throw new ParseException(Lexeme.class, 0);
+        throw new ParseException(Lexeme.class, 0, input);
 
       offset += matcher.group(1).length();
       Pair<FlexionSet, Integer> flexionParse = FlexionSet.parse(input.substring(offset));
       offset += flexionParse.getSecond();
       matcher = FLEXION_CLOSE_PATTERN.matcher(input.substring(offset));
       if (!matcher.matches())
-        throw new ParseException(Lexeme.class, 0);
+        throw new ParseException(Lexeme.class, 0, input);
       offset += matcher.group(1).length();
       matcher = CONTENT_OPEN_PATTERN.matcher(input.substring(offset));
       if (!matcher.matches())
-        throw new ParseException(Lexeme.class, 0);
+        throw new ParseException(Lexeme.class, 0, input);
       offset += matcher.group(1).length();
 
       Pair<Polymorpheme, Integer> contentParse = Polymorpheme.parse(input.substring(offset));
@@ -89,7 +88,7 @@ public class Lexeme extends Writable {
 
       matcher = CONTENT_CLOSE_PATTERN.matcher(input.substring(offset));
       if (!matcher.matches())
-        throw new ParseException(Lexeme.class, 0);
+        throw new ParseException(Lexeme.class, 0, input);
       offset += matcher.group(1).length();
       
       HashMap<String, IEMLUnit> map = new HashMap<String, IEMLUnit>();
@@ -99,7 +98,7 @@ public class Lexeme extends Writable {
       
       return new Pair<Lexeme, Integer>(new Lexeme(map, contentParse.getFirst(), flexionParse.getFirst(), input.substring(0, offset)), offset);
     } catch (ParseException e) {
-      throw new ParseException(Lexeme.class, e.getOffset() + offset);
+      throw new ParseException(Lexeme.class, e.getOffset() + offset, input);
     }
   }
 
@@ -152,7 +151,7 @@ public class Lexeme extends Writable {
     HashMap<String, Object> m = new HashMap<String, Object>();
     if (depth <= 0) {
       try {
-        m.put("translations", dictionary.getFromUSL(this.usl).get(lang));
+        m.put("translations", dictionary.get(this).get(lang));
         return new Tuple<Object>(m);
       } catch (MissingTranslationException e) {
         // in case no translation exist for this word in the dictionary, the mixed translation continues deeper

@@ -43,13 +43,11 @@ public class FlexionSet extends IEMLTuple {
     }
   };
 
-  private final String usl;
   private final MorphemeSet constant;
   private final IEMLSet<PolymorphemeGroup> groups;
 
-  private FlexionSet(HashMap<Object, IEMLUnit> m, MorphemeSet constant, IEMLSet<PolymorphemeGroup> groups, String usl) { // TODO add verification for the subset of morphemes contained
+  private FlexionSet(HashMap<Object, IEMLUnit> m, MorphemeSet constant, IEMLSet<PolymorphemeGroup> groups) { // TODO add verification for the subset of morphemes contained
     super(m);
-    this.usl = usl;
     this.constant = constant;
     this.groups = groups;
   }
@@ -90,15 +88,12 @@ public class FlexionSet extends IEMLTuple {
       }
     } catch (ParseException e ) {};
 
-    if (offset == 0)
-      throw new ParseException(FlexionSet.class, offset);
-
     IEMLSet<PolymorphemeGroup> groups = new IEMLSet<PolymorphemeGroup>(g);
     HashMap<Object, IEMLUnit> map = new HashMap<Object, IEMLUnit>();
     map.put("constant", constant);
     map.put("groups", groups);
 
-    return new Pair<FlexionSet, Integer>(new FlexionSet(map, constant, groups, input.substring(0, offset)), offset);
+    return new Pair<FlexionSet, Integer>(new FlexionSet(map, constant, groups), offset);
   }
 
   public static FlexionSet reBuild(Tuple<?> t) throws IncompatibleSolutionException {
@@ -116,36 +111,35 @@ public class FlexionSet extends IEMLTuple {
       HashMap<Object, IEMLUnit> map = new HashMap<Object, IEMLUnit>();
       map.put("constant", constant);
       map.put("groups", groups);
-
-      String usl = "";
-      for (Morpheme morpheme: constant) {
-        if (!usl.contentEquals(""))
-          usl += " ";
-        usl += morpheme.getUSL();
-      }
       
-      for (PolymorphemeGroup group: groups) {
-        if (!usl.contentEquals(""))
-          usl += " ";
-        usl += "m" + group.getMultiplicity() + "(";
-        
-        String groupUSL = "";
-        for (Morpheme morpheme: group.getMorphemes()) {
-          if (!groupUSL.contentEquals(""))
-            groupUSL += " ";
-          groupUSL += morpheme.getUSL();
-        }
-        usl += groupUSL + ")";
-      }
-      
-      return new FlexionSet(map, constant, groups, usl);
+      return new FlexionSet(map, constant, groups);
     } catch (ClassCastException e) {
       throw new IncompatibleSolutionException(e);
     }
   }
 
   public String getPseudoUSL() {
-    return this.usl;
+    String usl = "";
+    for (Morpheme morpheme: constant) {
+      if (!usl.contentEquals(""))
+        usl += " ";
+      usl += morpheme.getUSL();
+    }
+    
+    for (PolymorphemeGroup group: groups) {
+      if (!usl.contentEquals(""))
+        usl += " ";
+      usl += "m" + group.getMultiplicity() + "(";
+      
+      String groupUSL = "";
+      for (Morpheme morpheme: group.getMorphemes()) {
+        if (!groupUSL.contentEquals(""))
+          groupUSL += " ";
+        groupUSL += morpheme.getUSL();
+      }
+      usl += groupUSL + ")";
+    }
+    return usl;
   }
 
   public static FlexionSet factory(JSONObject obj) throws StyleException, JSONStructureException {
@@ -184,14 +178,7 @@ public class FlexionSet extends IEMLTuple {
 
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
     HashMap<Object, Object> map = new HashMap<Object, Object>();
-    if (depth <= 0) {
-      try {
-        map.put("translations", dictionary.getFromUSL(this.usl).get(lang));
-        return new Tuple<Object>(map);
-      } catch (MissingTranslationException e) {
-        // in case no translation exist for this word in the dictionary, the mixed translation continues deeper
-      }
-    }
+    
     HashSet<Object> constant = new HashSet<Object>();
     for (Morpheme m: this.constant)
       constant.add(m.mixedTranslation(lang, depth-1, dictionary));
