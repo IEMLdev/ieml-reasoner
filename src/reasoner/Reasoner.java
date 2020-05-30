@@ -24,6 +24,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import io.github.vletard.analogy.DefaultProportion;
+import io.github.vletard.analogy.Relation;
 import io.github.vletard.analogy.Solution;
 import io.github.vletard.analogy.tuple.TupleEquation;
 import parser.IEMLUnit;
@@ -36,6 +37,7 @@ import parser.Polymorpheme;
 import parser.Word;
 import parser.Writable;
 import parser.WritableBuilder;
+import util.Pair;
 import util.Quadruple;
 import util.Triple;
 
@@ -69,7 +71,7 @@ public class Reasoner<T extends Writable> {
       try {
         T parse = builder.parse(usl);
         this.database.add(parse);
-        
+
       } catch (ParseException e) {
         this.parseFailed.add(usl);
       }
@@ -173,7 +175,7 @@ public class Reasoner<T extends Writable> {
                 }
                 this.l = 0;
               }
-              
+
               this.saveProgress(this.i, this.j, this.k, this.l);
 
               T wi = Reasoner.this.database.get(this.i);
@@ -188,7 +190,7 @@ public class Reasoner<T extends Writable> {
           private void saveProgress(int i, int j, int k, int l) {
             this.saveProgress(PROGRESS_SAVING_DELAY_MILLIS, i, j, k, l);
           }
-          
+
           private long saveDelay = 0;
           private void saveProgress(long delay, int i, int j, int k, int l) {
             long time = System.currentTimeMillis();
@@ -208,12 +210,12 @@ public class Reasoner<T extends Writable> {
     };
   }
 
-  public Iterable<String> displayEquations(String progressFilename) {
-    return new Iterable<String>() {
+  public Iterable<Pair<String, String>> displayEquations(String progressFilename) {
+    return new Iterable<Pair<String, String>>() {
 
       @Override
-      public Iterator<String> iterator() {
-        return new Iterator<String>() {
+      public Iterator<Pair<String, String>> iterator() {
+        return new Iterator<Pair<String, String>>() {
           private Iterator<Triple<Integer>> indices = Reasoner.this.computeEquations(progressFilename).iterator();
           private Iterator<Solution<T>> solutions = Collections.emptyIterator();
           private Triple<Integer> currentIndices;
@@ -234,20 +236,19 @@ public class Reasoner<T extends Writable> {
           }
 
           @Override
-          public String next() {
+          public Pair<String, String> next() {
             if (this.hasNext()) {
               Solution<T> result = this.solutions.next();
-              String indices = "", translations = "", usls = "", relations = "", preexisting = "new";
+              String indices = "", translations = "", usls = "", relations = "";
               boolean preexistingSolution = false;
-              
+
               for (T item: Reasoner.this.database) {
                 if (item.getUSL().contentEquals(result.getContent().getUSL())) {
                   preexistingSolution = true;
-                  preexisting = "in database";
                   break;
                 }
               }
-              
+
               indices = this.currentIndices.getFirst() + "\t" + this.currentIndices.getSecond() + "\t" + this.currentIndices.getThird();
               for (Integer i: this.currentIndices) {
                 try {
@@ -268,9 +269,13 @@ public class Reasoner<T extends Writable> {
               usls += Reasoner.this.database.get(this.currentIndices.getSecond()).getUSL() + "\t";
               usls += Reasoner.this.database.get(this.currentIndices.getThird()).getUSL() + "\t";
               usls += result.getContent().getUSL();
-              
-              relations = "R1: " + result.getRelation().displayStraight() + "\nR2: " + result.getRelation().displayCrossed();
-              return indices + "\n" + translations + "\n" + usls + "\n" + relations + "\n" + preexisting + "\n";
+
+              relations =  "R1: " + result.getStraightRelation() + "\n";
+              relations += "R2: " + result.getCrossedRelation();
+              if (preexistingSolution)
+                return new Pair<String, String>(null, indices + "\n" + translations + "\n" + usls + "\n" + relations + "\n");
+              else
+                return new Pair<String, String>(indices + "\n" + translations + "\n" + usls + "\n" + relations + "\n", null);
             }
             else throw new NoSuchElementException();
           }
@@ -337,7 +342,7 @@ public class Reasoner<T extends Writable> {
                 return new Triple<Integer>(this.i, this.j, this.k);
             }
           }
-          
+
           private void saveProgress(int i, int j, int k) {
             this.saveProgress(PROGRESS_SAVING_DELAY_MILLIS, i, j, k);
           }
@@ -441,37 +446,54 @@ public class Reasoner<T extends Writable> {
       }
     }));
 
-    threads.add(new Thread(new Runnable() {
-      @Override
-      public void run() {
-        String filename = Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-proportions.txt.bz2";
-        PrintStream out;
-        try {
-          out = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(filename)));
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-        System.out.println("Writing proportions to " + filename + "...");
-        for (String proportionResult: Reasoner.this.displayProportions(filename + ".progress"))
-          out.println(proportionResult);
-        out.close();
-      }
-    }));
+    //    threads.add(new Thread(new Runnable() {
+    //      @Override
+    //      public void run() {
+    //        String filename = Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-proportions.txt.bz2";
+    //        PrintStream out;
+    //        try {
+    //          out = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(filename)));
+    //        } catch (IOException e) {
+    //          throw new RuntimeException(e);
+    //        }
+    //        System.out.println("Writing proportions to " + filename + "...");
+    //        for (String proportionResult: Reasoner.this.displayProportions(filename + ".progress"))
+    //          out.println(proportionResult);
+    //        out.close();
+    //      }
+    //    }));
 
     threads.add(new Thread(new Runnable() {
       @Override
       public void run() {
-        String filename = Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-equations.txt.bz2";
-        PrintStream out;
+        HashMap<Relation, Set<Triple<Integer>>> relationMap = new HashMap<Relation, Set<Triple<Integer>>>();
+        
+        String equationsFilename = Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-equations.txt.bz2";
+        String proportionsFilename = Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-proportions.txt.bz2";
+        PrintStream equationsOut, proportionsOut;
         try {
-          out = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(filename)));
+          equationsOut = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(equationsFilename)));
+          proportionsOut = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(proportionsFilename)));
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
-        System.out.println("Writing equations to " + filename + "...");
-        for (String equationResult: Reasoner.this.displayEquations(filename + ".progress"))
-          out.println(equationResult);
-        out.close();
+        System.out.println("Writing equations and proportions to " + equationsFilename + " and " + proportionsFilename + "...");
+        for (Pair<String, String> result: Reasoner.this.displayEquations(
+            Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-progress-equations-proportions.txt")) {
+          String equationResult = result.getFirst();
+          String proportionResult = result.getSecond();
+
+          if (equationResult != null) {
+            assert(proportionResult == null);
+            equationsOut.println(equationResult);
+          }
+          if (proportionResult != null) {
+            assert(equationResult == null);
+            proportionsOut.println(proportionResult);
+          }
+        }
+        equationsOut.close();
+        proportionsOut.close();
       }
     }));
 
