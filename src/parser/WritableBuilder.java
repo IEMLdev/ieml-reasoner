@@ -1,5 +1,7 @@
 package parser;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 
 import io.github.vletard.analogy.SubtypeRebuilder;
@@ -22,17 +24,26 @@ public abstract class WritableBuilder<T extends Writable> extends SubTupleRebuil
     super(subordinates, defaultBuilder);
   }
 
-  public static Writable parseAny(String usl) throws ParseException {
+  public static Iterable<Writable> parseAny(String usl) {
+    HashSet<Writable> set = new HashSet<Writable>();
+    
+//    try {
+//      set.add(Word.BUILDER.parse(usl));
+//    } catch (ParseException e) {}
+    
     try {
-      return Morpheme.BUILDER.parse(usl);
+      set.add(Lexeme.BUILDER.parse(usl));
     } catch (ParseException e) {}
+    
     try {
-      return Polymorpheme.BUILDER.parse(usl);
+      set.add(Polymorpheme.BUILDER.parse(usl));
     } catch (ParseException e) {}
+    
     try {
-      return Lexeme.BUILDER.parse(usl);
+      set.add(Morpheme.BUILDER.parse(usl));
     } catch (ParseException e) {}
-    throw new ParseException(Writable.class, 0, usl);
+    
+    return Collections.unmodifiableSet(set);
   }
 
   //  public static final WritableBuilder<Morpheme> MORPHEME_BUILDER_INSTANCE = new WritableBuilder<Morpheme>() {

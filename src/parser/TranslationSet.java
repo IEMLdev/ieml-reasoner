@@ -13,15 +13,10 @@ import org.json.JSONObject;
 
 public class TranslationSet implements Iterable<Map.Entry<String, List<String>>> {
 
-  private final String usl;
   private final HashMap<String, ArrayList<String>> map;
   
   public TranslationSet(JSONObject obj) {
     this.map = new HashMap<String, ArrayList<String>>();
-    if (!obj.isNull("usl"))  // this should better be identical in every type of json dump
-      this.usl = obj.getString("usl");
-    else
-      this.usl = obj.getString("ieml");
     
     final JSONObject tr = obj.getJSONObject("translations");
     for (String lang: tr.keySet()) {
@@ -39,13 +34,9 @@ public class TranslationSet implements Iterable<Map.Entry<String, List<String>>>
     return Collections.unmodifiableList(this.map.get(lang));
   }
   
-  public String getUsl() {
-    return this.usl;
-  }
-  
   @Override
   public String toString() {
-    return this.usl + " " + this.map.toString();
+    return this.map.toString();
   }
 
   @Override
@@ -53,7 +44,6 @@ public class TranslationSet implements Iterable<Map.Entry<String, List<String>>>
     final int prime = 31;
     int result = 1;
     result = prime * result + ((map == null) ? 0 : map.hashCode());
-    result = prime * result + ((usl == null) ? 0 : usl.hashCode());
     return result;
   }
 
@@ -70,11 +60,6 @@ public class TranslationSet implements Iterable<Map.Entry<String, List<String>>>
       if (other.map != null)
         return false;
     } else if (!map.equals(other.map))
-      return false;
-    if (usl == null) {
-      if (other.usl != null)
-        return false;
-    } else if (!usl.equals(other.usl))
       return false;
     return true;
   }

@@ -1,9 +1,7 @@
 package reasoner;
 
-import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -43,7 +41,8 @@ import util.Triple;
 
 public class Reasoner<T extends Writable> {
   public static final String DEFAULT_BASENAME = "/tmp/ieml-reasoner";
-  public static final long PROGRESS_SAVING_DELAY_MILLIS = 30000;
+  public static final long PROGRESS_SAVING_DELAY_MILLIS = 10000;
+  public static final String DEFAULT_LANGUAGE = "fr";
 
   private final Dictionary dict;
   private final ArrayList<T> database;
@@ -71,7 +70,12 @@ public class Reasoner<T extends Writable> {
       try {
         T parse = builder.parse(usl);
         this.database.add(parse);
-
+        try {
+          dict.get(parse);
+        } catch (MissingTranslationException e) {
+          //          System.err.println(dict.getUSLDict().containsKey(parse.getUSL()));
+          assert(false);
+        }
       } catch (ParseException e) {
         this.parseFailed.add(usl);
       }
@@ -126,24 +130,24 @@ public class Reasoner<T extends Writable> {
               String output = "";
               output += t.getFirst() + "\t" + t.getSecond() + "\t" + t.getThird() + "\t" + t.getFourth() + "\n";
               try {
-                output += Reasoner.this.dict.get(Reasoner.this.database.get(t.getFirst()).getUSL()).get("fr") + " : ";
+                output += Reasoner.this.dict.get(Reasoner.this.database.get(t.getFirst())).get(DEFAULT_LANGUAGE) + " : ";
               } catch (MissingTranslationException e) {
-                output += "<no translation> : ";
+                output += "<no " + DEFAULT_LANGUAGE + " translation> : ";
               }
               try {
-                output += Reasoner.this.dict.get(Reasoner.this.database.get(t.getSecond()).getUSL()).get("fr") + " :: ";
+                output += Reasoner.this.dict.get(Reasoner.this.database.get(t.getSecond())).get(DEFAULT_LANGUAGE) + " :: ";
               } catch (MissingTranslationException e) {
-                output += "<no translation> : ";
+                output += "<no " + DEFAULT_LANGUAGE + " translation> : ";
               }
               try {
-                output += Reasoner.this.dict.get(Reasoner.this.database.get(t.getThird()).getUSL()).get("fr") + " : ";
+                output += Reasoner.this.dict.get(Reasoner.this.database.get(t.getThird())).get(DEFAULT_LANGUAGE) + " : ";
               } catch (MissingTranslationException e) {
-                output += "<no translation> : ";
+                output += "<no " + DEFAULT_LANGUAGE + " translation> : ";
               }
               try {
-                output += Reasoner.this.dict.get(Reasoner.this.database.get(t.getFourth()).getUSL()).get("fr") + "\n";
+                output += Reasoner.this.dict.get(Reasoner.this.database.get(t.getFourth())).get(DEFAULT_LANGUAGE) + "\n";
               } catch (MissingTranslationException e) {
-                output += "<no translation> : ";
+                output += "<no " + DEFAULT_LANGUAGE + " translation> : ";
               }
               output += Reasoner.this.database.get(t.getFirst()).getUSL() + " : ";
               output += Reasoner.this.database.get(t.getSecond()).getUSL() + " :: ";
@@ -197,9 +201,9 @@ public class Reasoner<T extends Writable> {
             if (time - this.saveDelay > delay) {
               this.saveDelay = time;
               try {
-                BufferedWriter writer = new BufferedWriter(new FileWriter(progressFilename));
-                writer.write(i + "\t" + j + "\t" + k + "\t" + l + "\n");
-                writer.close();
+                PrintStream out = new PrintStream(progressFilename);
+                out.println(i + "\t" + j + "\t" + k + "\t" + l);
+                out.close();
               } catch (IOException e) {
                 throw new RuntimeException(e);
               }
@@ -210,15 +214,16 @@ public class Reasoner<T extends Writable> {
     };
   }
 
-  public Iterable<Pair<String, String>> displayEquations(String progressFilename) {
+  public Iterable<Pair<String, String>> displayEquations(String baseFilename) {
     return new Iterable<Pair<String, String>>() {
 
       @Override
       public Iterator<Pair<String, String>> iterator() {
         return new Iterator<Pair<String, String>>() {
-          private Iterator<Triple<Integer>> indices = Reasoner.this.computeEquations(progressFilename).iterator();
+          private final Iterator<Triple<Integer>> indices = Reasoner.this.computeEquations(baseFilename + "-progress-equations-proportions.txt").iterator();
           private Iterator<Solution<T>> solutions = Collections.emptyIterator();
           private Triple<Integer> currentIndices;
+          private final HashMap<Relation, Pair<Set<Pair<Triple<Integer>, Solution<T>>>, Set<Pair<Triple<Integer>, Solution<T>>>>> relationMap = new HashMap<Relation, Pair<Set<Pair<Triple<Integer>, Solution<T>>>, Set<Pair<Triple<Integer>, Solution<T>>>>>();
 
           @Override
           public boolean hasNext() {
@@ -243,7 +248,7 @@ public class Reasoner<T extends Writable> {
               boolean preexistingSolution = false;
 
               for (T item: Reasoner.this.database) {
-                if (item.getUSL().contentEquals(result.getContent().getUSL())) {
+                if (item.equals(result.getContent())) {
                   preexistingSolution = true;
                   break;
                 }
@@ -252,17 +257,17 @@ public class Reasoner<T extends Writable> {
               indices = this.currentIndices.getFirst() + "\t" + this.currentIndices.getSecond() + "\t" + this.currentIndices.getThird();
               for (Integer i: this.currentIndices) {
                 try {
-                  translations += Reasoner.this.dict.get(Reasoner.this.database.get(i).getUSL()).get("fr") + "\t";
+                  translations += Reasoner.this.dict.get(Reasoner.this.database.get(i)).get(DEFAULT_LANGUAGE) + "\t";
                 } catch (MissingTranslationException e) {
-                  translations += "<no translation>\t";
+                  translations += "<no " + DEFAULT_LANGUAGE + " translation>\t";
                 }
               }
               try {
-                translations += Reasoner.this.dict.get(result.getContent().getUSL()).get("fr");
+                translations += Reasoner.this.dict.get(result.getContent()).get(DEFAULT_LANGUAGE);
                 assert(preexistingSolution);
               } catch (MissingTranslationException e) {
                 assert(!preexistingSolution);
-                translations += "<no translation>"; // TODO try analogies on translations
+                translations += "<no " + DEFAULT_LANGUAGE + " translation>"; // TODO try analogies on translations
               }
 
               usls = Reasoner.this.database.get(this.currentIndices.getFirst()).getUSL() + "\t";
@@ -272,12 +277,85 @@ public class Reasoner<T extends Writable> {
 
               relations =  "R1: " + result.getStraightRelation() + "\n";
               relations += "R2: " + result.getCrossedRelation();
-              if (preexistingSolution)
+              if (preexistingSolution) {
+                this.updateRelations(result);
                 return new Pair<String, String>(null, indices + "\n" + translations + "\n" + usls + "\n" + relations + "\n");
+              }
               else
                 return new Pair<String, String>(indices + "\n" + translations + "\n" + usls + "\n" + relations + "\n", null);
             }
             else throw new NoSuchElementException();
+          }
+
+          private void updateRelations(Solution<T> solution) {
+            final Relation r1 = solution.getStraightRelation();
+            final Relation r2 = solution.getCrossedRelation();
+
+            this.relationMap.putIfAbsent(r1, new Pair<Set<Pair<Triple<Integer>, Solution<T>>>, Set<Pair<Triple<Integer>, Solution<T>>>>(new HashSet<Pair<Triple<Integer>, Solution<T>>>(), new HashSet<Pair<Triple<Integer>, Solution<T>>>()));
+            this.relationMap.putIfAbsent(r2, new Pair<Set<Pair<Triple<Integer>, Solution<T>>>, Set<Pair<Triple<Integer>, Solution<T>>>>(new HashSet<Pair<Triple<Integer>, Solution<T>>>(), new HashSet<Pair<Triple<Integer>, Solution<T>>>()));
+
+            this.relationMap.get(r1).getFirst().add(new Pair<Triple<Integer>, Solution<T>>(this.currentIndices, solution));
+            this.relationMap.get(r2).getSecond().add(new Pair<Triple<Integer>, Solution<T>>(this.currentIndices, solution));
+
+            try {
+              PrintStream out = new PrintStream(new BZip2CompressorOutputStream(new FileOutputStream(baseFilename + "-relations.txt.bz2")));
+              for (Entry<Relation, Pair<Set<Pair<Triple<Integer>, Solution<T>>>, Set<Pair<Triple<Integer>, Solution<T>>>>> entry: this.relationMap.entrySet()) {
+                out.println(entry.getKey());
+                for (Pair<Triple<Integer>, Solution<T>> p: entry.getValue().getFirst()) {
+                  out.print(p.getFirst() + ":");
+                  try {
+                    out.print("\t" + Reasoner.this.dict.get(Reasoner.this.database.get(p.getFirst().getFirst())).get(DEFAULT_LANGUAGE));
+                  } catch (MissingTranslationException e) {
+                    out.print("\t<no " + DEFAULT_LANGUAGE + " translation>");
+                  }
+                  try {
+                    out.print("\t" + Reasoner.this.dict.get(Reasoner.this.database.get(p.getFirst().getSecond())).get(DEFAULT_LANGUAGE));
+                  } catch (MissingTranslationException e) {
+                    out.print("\t<no " + DEFAULT_LANGUAGE + " translation>");
+                  }
+                  try {
+                    out.print("\t" + Reasoner.this.dict.get(Reasoner.this.database.get(p.getFirst().getThird())).get(DEFAULT_LANGUAGE));
+                  } catch (MissingTranslationException e) {
+                    out.print("\t<no " + DEFAULT_LANGUAGE + " translation>");
+                  }
+                  try {
+                    out.println("\t" + Reasoner.this.dict.get(p.getSecond().getContent()).get(DEFAULT_LANGUAGE));
+                  } catch (MissingTranslationException e) {
+                    out.println("\t<no " + DEFAULT_LANGUAGE + " translation>");
+                  }
+                }
+                out.println();
+
+                for (Pair<Triple<Integer>, Solution<T>> p: entry.getValue().getSecond()) {
+                  out.print(p.getFirst() + ":");
+                  try {
+                    out.print("\t" + Reasoner.this.dict.get(Reasoner.this.database.get(p.getFirst().getFirst())).get(DEFAULT_LANGUAGE));
+                  } catch (MissingTranslationException e) {
+                    out.print("\t<no " + DEFAULT_LANGUAGE + " translation>");
+                  }
+                  try {
+                    out.print("\t" + Reasoner.this.dict.get(Reasoner.this.database.get(p.getFirst().getSecond())).get(DEFAULT_LANGUAGE));
+                  } catch (MissingTranslationException e) {
+                    out.print("\t<no " + DEFAULT_LANGUAGE + " translation>");
+                  }
+                  try {
+                    out.print("\t" + Reasoner.this.dict.get(Reasoner.this.database.get(p.getFirst().getThird())).get(DEFAULT_LANGUAGE));
+                  } catch (MissingTranslationException e) {
+                    out.print("\t<no " + DEFAULT_LANGUAGE + " translation>");
+                  }
+                  try {
+                    out.println("\t" + Reasoner.this.dict.get(p.getSecond().getContent()).get(DEFAULT_LANGUAGE));
+                  } catch (MissingTranslationException e) {
+                    out.println("\t<no " + DEFAULT_LANGUAGE + " translation>");
+                  }
+                }
+                out.println();
+                out.println();
+              }
+              out.close();
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
           }
         };
       }
@@ -353,9 +431,9 @@ public class Reasoner<T extends Writable> {
             if (time - this.saveDelay > delay) {
               this.saveDelay = time;
               try {
-                BufferedWriter writer = new BufferedWriter(new FileWriter(progressFilename));
-                writer.write(i + "\t" + j + "\t" + k + "\n");
-                writer.close();
+                PrintStream out = new PrintStream(progressFilename);
+                out.println(i + "\t" + j + "\t" + k + "\t(" + ((i+1)*100 / Reasoner.this.database.size()) + "%)");
+                out.close();
               } catch (IOException e) {
                 throw new RuntimeException(e);
               }
@@ -380,7 +458,7 @@ public class Reasoner<T extends Writable> {
 
     for (T term: this.database) {
       try {
-        for (String singleTranslation: this.dict.get(term.getUSL()).get(this.selectedLanguage)) {
+        for (String singleTranslation: this.dict.get(term).get(this.selectedLanguage)) {
           iemlPerTranslation.putIfAbsent(singleTranslation, new LinkedList<T>());
           LinkedList<T> iemlList = iemlPerTranslation.get(singleTranslation);
           iemlList.add(term);
@@ -411,9 +489,9 @@ public class Reasoner<T extends Writable> {
         for (int i = 0; i < Reasoner.this.database.size(); i++) {
           String output = Reasoner.this.database.get(i).getUSL() + "\t";
           try {
-            output += Reasoner.this.dict.get(Reasoner.this.database.get(i).getUSL()).get("fr");
+            output += Reasoner.this.dict.get(Reasoner.this.database.get(i)).get(DEFAULT_LANGUAGE);
           } catch (MissingTranslationException e) {
-            output += "<no translation>";
+            output += "<no " + DEFAULT_LANGUAGE + " translation>";
           }
           out.println(output);
         }
@@ -436,7 +514,7 @@ public class Reasoner<T extends Writable> {
           out.println(mapping.getKey() + ":");
           for (T term: mapping.getValue())
             try {
-              out.println("\t" + term.getUSL() + " (" + Reasoner.this.dict.get(term.getUSL()).get(Reasoner.this.selectedLanguage) + ")");
+              out.println("\t" + term.getUSL() + " (" + Reasoner.this.dict.get(term).get(Reasoner.this.selectedLanguage) + ")");
             } catch (MissingTranslationException e) {
               out.close();
               throw new RuntimeException("Unexpected exception.", e);
@@ -467,7 +545,7 @@ public class Reasoner<T extends Writable> {
       @Override
       public void run() {
         HashMap<Relation, Set<Triple<Integer>>> relationMap = new HashMap<Relation, Set<Triple<Integer>>>();
-        
+
         String equationsFilename = Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-equations.txt.bz2";
         String proportionsFilename = Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-proportions.txt.bz2";
         PrintStream equationsOut, proportionsOut;
@@ -478,8 +556,7 @@ public class Reasoner<T extends Writable> {
           throw new RuntimeException(e);
         }
         System.out.println("Writing equations and proportions to " + equationsFilename + " and " + proportionsFilename + "...");
-        for (Pair<String, String> result: Reasoner.this.displayEquations(
-            Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-progress-equations-proportions.txt")) {
+        for (Pair<String, String> result: Reasoner.this.displayEquations(Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName)) {
           String equationResult = result.getFirst();
           String proportionResult = result.getSecond();
 
@@ -503,10 +580,9 @@ public class Reasoner<T extends Writable> {
   }
 
 
-  public static void main(String[] args) throws JSONStructureException, InterruptedException {
+  public static void main(String[] args) throws JSONStructureException, InterruptedException, ParseException {
     final String WORDS_SAMPLE_FILENAME = "resources/words_sample.json.bz2";
     final String DICTIONARY_FILENAME = "resources/dictionary.json.bz2";
-    final String lang = "fr";
 
     Reasoner<Morpheme> morphemeReasoner;
     Reasoner<Polymorpheme> polymorphemeReasoner;
@@ -536,9 +612,9 @@ public class Reasoner<T extends Writable> {
       }
 
       final Dictionary dict = new Dictionary(jsonTranslations);
-      morphemeReasoner = new Reasoner<Morpheme>(dict, usls, Morpheme.BUILDER, lang);
-      polymorphemeReasoner = new Reasoner<Polymorpheme>(dict, usls, Polymorpheme.BUILDER, lang);
-      lexemeReasoner = new Reasoner<Lexeme>(dict, usls, Lexeme.BUILDER, lang);
+      morphemeReasoner = new Reasoner<Morpheme>(dict, usls, Morpheme.BUILDER, DEFAULT_LANGUAGE);
+      polymorphemeReasoner = new Reasoner<Polymorpheme>(dict, usls, Polymorpheme.BUILDER, DEFAULT_LANGUAGE);
+      lexemeReasoner = new Reasoner<Lexeme>(dict, usls, Lexeme.BUILDER, DEFAULT_LANGUAGE);
     } catch (IOException e) {
       throw new RuntimeException("Cannot open IEML JSON exports. Please generate them first.", e);
     }

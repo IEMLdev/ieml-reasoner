@@ -1,7 +1,10 @@
 package reasoner;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.json.JSONObject;
 
@@ -14,49 +17,39 @@ import parser.WritableBuilder;
 
 public class Dictionary {
 
-  private final ArrayList<TranslationSet> translations;
-  private final HashMap<String, Integer> uslDict;
-  private final HashMap<Writable, Integer> writableDict;
+  private final List<TranslationSet> translations;
+  private final Map<Writable, Integer> writableDict;
 
-  public Dictionary(ArrayList<JSONObject> translations) throws JSONStructureException {
-    this.translations = new ArrayList<TranslationSet>();
-    this.uslDict = new HashMap<String, Integer>();
-    this.writableDict = new HashMap<Writable, Integer>();
+  public Dictionary(ArrayList<JSONObject> jsonTranslations) throws JSONStructureException, ParseException {
+    ArrayList<TranslationSet> translations = new ArrayList<TranslationSet>();
+    HashMap<Writable, Integer> writableDict = new HashMap<Writable, Integer>();
 
-    for (JSONObject obj: translations) {
+    for (JSONObject obj: jsonTranslations) {
       TranslationSet t = new TranslationSet(obj);
+      String usl =  obj.getString("usl");
       
-      if (this.uslDict.containsKey(t.getUsl())) {
-        if (this.translations.get(this.uslDict.get(t.getUsl())).equals(t))
-          System.err.println("Warning: duplicate entry in input JSON file: " + t.getUsl());
-        else
-          throw new JSONStructureException("The following USL is mapped with two distinct translation sets: " + t.getUsl());
-      }
-      else {
-        this.uslDict.put(t.getUsl(), this.translations.size());
-        try {
-          this.writableDict.put(WritableBuilder.parseAny(t.getUsl()), this.translations.size());
-        } catch (ParseException e) {
-          e.printStackTrace();
+      for (Writable w: WritableBuilder.parseAny(usl)) {
+        if (writableDict.containsKey(w)) {
+          if (translations.get(writableDict.get(w)).equals(t))
+            System.err.println("Warning: duplicate entry in input JSON file: " + usl);
+          else
+            throw new JSONStructureException("The following USL is mapped with two distinct translation sets: " + usl);
+        }
+        else {
+          writableDict.put(w, translations.size());
+          translations.add(t);
         }
       }
-
-      this.translations.add(t);
     }
+
+    this.translations = Collections.unmodifiableList(translations);
+    this.writableDict = Collections.unmodifiableMap(writableDict);
   }
 
-  public TranslationSet get(String usl) throws MissingTranslationException {
-    if (!this.uslDict.containsKey(usl))
+  public TranslationSet get(Writable w) throws MissingTranslationException {
+    if (!this.writableDict.containsKey(w))
       throw new MissingTranslationException();
-    else
-      return this.translations.get(this.uslDict.get(usl));
-  }
-  
-  public TranslationSet get(Writable object) throws MissingTranslationException {
-    if (!this.writableDict.containsKey(object))
-      throw new MissingTranslationException();
-    else
-      return this.translations.get(this.writableDict.get(object));
+    return this.translations.get(this.writableDict.get(w));
   }
 
   @Override
