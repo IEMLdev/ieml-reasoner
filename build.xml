@@ -9,7 +9,7 @@
 
     <mkdir dir="lib"/>
     <get src="https://repo1.maven.org/maven2/org/json/json/20190722/json-20190722.jar" dest="lib" usetimestamp="true"/>
-    <get src="https://apache.mirror.gtcomm.net//commons/compress/binaries/commons-compress-1.20-bin.zip" dest="lib" usetimestamp="true"/>
+    <get src="https://downloads.apache.org//commons/compress/binaries/commons-compress-1.20-bin.zip" dest="lib" usetimestamp="true"/>
     <unzip src="lib/commons-compress-1.20-bin.zip" dest="lib"/>
 
     <mkdir dir="build/classes"/>
