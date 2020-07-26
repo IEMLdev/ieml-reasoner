@@ -1,10 +1,10 @@
 package parser;
 
-public class IEMLStringAttribute implements IEMLUnit {
+public class IEMLStringAttribute implements IEMLUnit, CharSequence {
   private final String str;
   
-  public IEMLStringAttribute(String str) {
-    this.str = str;
+  public IEMLStringAttribute(CharSequence str) {
+    this.str = str.toString();
   }
   
   public String getValue() {
@@ -13,6 +13,21 @@ public class IEMLStringAttribute implements IEMLUnit {
 
   public boolean contentEquals(CharSequence s) {
     return this.str.contentEquals(s);
+  }
+
+  @Override
+  public char charAt(int i) {
+    return this.str.charAt(i);
+  }
+
+  @Override
+  public int length() {
+    return this.str.length();
+  }
+
+  @Override
+  public IEMLStringAttribute subSequence(int from, int to) {
+    return new IEMLStringAttribute(str.subSequence(from, to));
   }
   
   @Override
@@ -40,7 +55,7 @@ public class IEMLStringAttribute implements IEMLUnit {
     if (str == null) {
       if (other.str != null)
         return false;
-    } else if (!str.equals(other.str))
+    } else if (!str.contentEquals(other.str))
       return false;
     return true;
   }

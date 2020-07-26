@@ -25,7 +25,7 @@ public class Lexeme extends Writable {
   private static final Pattern FLEXION_CLOSE_PATTERN = Pattern.compile("(" + Pattern.quote(FLEXION_CLOSE) + ").*");
   private static final Pattern CONTENT_OPEN_PATTERN = Pattern.compile("(" + Pattern.quote(CONTENT_OPEN) + ").*");
   private static final Pattern CONTENT_CLOSE_PATTERN = Pattern.compile("(" + Pattern.quote(CONTENT_CLOSE) + ").*");
-  
+
   private static final Map<Object, SubtypeRebuilder<?, ?>> BUILDER_MAP;
   static {
     Map<Object, SubtypeRebuilder<?, ? extends IEMLUnit>> map = new HashMap<Object, SubtypeRebuilder<?, ? extends IEMLUnit>>();
@@ -34,7 +34,7 @@ public class Lexeme extends Writable {
     BUILDER_MAP = Collections.unmodifiableMap(map);
   }
   public static final WritableBuilder<Lexeme> BUILDER = new WritableBuilder<Lexeme>(BUILDER_MAP) {
-    
+
     @Override
     public Lexeme parse(String usl) throws ParseException {
       Pair<Lexeme, Integer> parse = Lexeme.parse(usl);
@@ -53,13 +53,11 @@ public class Lexeme extends Writable {
     }
   };
 
-  private final String usl;
   private final Polymorpheme pm_content;
   private final FlexionSet pm_flexion;
 
-  private Lexeme(HashMap<String, IEMLUnit> m, Polymorpheme content, FlexionSet flexions, String usl) {
+  private Lexeme(HashMap<String, IEMLUnit> m, Polymorpheme content, FlexionSet flexions) {
     super(m);
-    this.usl = usl;
     this.pm_content = content;
     this.pm_flexion = flexions;
   }
@@ -78,25 +76,28 @@ public class Lexeme extends Writable {
       if (!matcher.matches())
         throw new ParseException(Lexeme.class, 0, input);
       offset += matcher.group(1).length();
+
+      Polymorpheme content = null;
       matcher = CONTENT_OPEN_PATTERN.matcher(input.substring(offset));
-      if (!matcher.matches())
-        throw new ParseException(Lexeme.class, 0, input);
-      offset += matcher.group(1).length();
+      if (matcher.matches()) {
+        offset += matcher.group(1).length();
 
-      Pair<Polymorpheme, Integer> contentParse = Polymorpheme.parse(input.substring(offset));
-      offset += contentParse.getSecond();
+        Pair<Polymorpheme, Integer> contentParse = Polymorpheme.parse(input.substring(offset));
+        offset += contentParse.getSecond();
+        content = contentParse.getFirst();
 
-      matcher = CONTENT_CLOSE_PATTERN.matcher(input.substring(offset));
-      if (!matcher.matches())
-        throw new ParseException(Lexeme.class, 0, input);
-      offset += matcher.group(1).length();
-      
+        matcher = CONTENT_CLOSE_PATTERN.matcher(input.substring(offset));
+        if (!matcher.matches())
+          throw new ParseException(Lexeme.class, 0, input);
+        offset += matcher.group(1).length();
+      }
+
       HashMap<String, IEMLUnit> map = new HashMap<String, IEMLUnit>();
       map.put("type", new IEMLStringAttribute(typeName));
-      map.put("content", contentParse.getFirst());
+      map.put("content", content);
       map.put("flexions", flexionParse.getFirst());
-      
-      return new Pair<Lexeme, Integer>(new Lexeme(map, contentParse.getFirst(), flexionParse.getFirst(), input.substring(0, offset)), offset);
+
+      return new Pair<Lexeme, Integer>(new Lexeme(map, content, flexionParse.getFirst()), offset);
     } catch (ParseException e) {
       throw new ParseException(Lexeme.class, e.getOffset() + offset, input);
     }
@@ -107,14 +108,22 @@ public class Lexeme extends Writable {
       final IEMLStringAttribute type = (IEMLStringAttribute) t.get("type");
       assert(type.getValue().contentEquals(typeName));
 
-      final Polymorpheme content = Polymorpheme.reBuild((Tuple<?>) t.get("content"));
-      final FlexionSet flexion = FlexionSet.reBuild((Tuple<?>) t.get("flexions"));
+      final Polymorpheme content;
+      if (t.get("content") != null)
+        content = Polymorpheme.reBuild((Tuple<?>) t.get("content"));
+      else
+        content = null;
+      final FlexionSet flexion;
+      if (t.get("flexions") != null)
+        flexion = FlexionSet.reBuild((Tuple<?>) t.get("flexions"));
+      else
+        flexion = null;
 
       HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
       m.put("type", type);
       m.put("content", content);
       m.put("flexions", flexion);
-      return new Lexeme(m, content, flexion, null);
+      return new Lexeme(m, content, flexion);
     } catch (ClassCastException e) {
       throw new IncompatibleSolutionException(e);
     }
@@ -124,7 +133,6 @@ public class Lexeme extends Writable {
     String type_str = obj.getString("type");
     assert(type_str.contentEquals(typeName));
 
-    final String usl = obj.getString("ieml");
     final IEMLStringAttribute type = new IEMLStringAttribute(type_str);
     final Polymorpheme content = Polymorpheme.factory(obj.getJSONObject("pm_content"));
     final FlexionSet flexion = FlexionSet.factory(obj.getJSONObject("pm_flexion"));
@@ -133,16 +141,16 @@ public class Lexeme extends Writable {
     m.put("type", type);
     m.put("content", content);
     m.put("flexions", flexion);
-    return new Lexeme(m, content, flexion, usl);
+    return new Lexeme(m, content, flexion);
   }
 
   @Override
   public String getUSL() {
     String flexionsUSL = this.pm_flexion.getPseudoUSL();
-    String contentUSL = this.pm_content.getUSL();
     String usl = FLEXION_OPEN + flexionsUSL + FLEXION_CLOSE;
-    if (contentUSL.length() > 0)
-      usl += CONTENT_OPEN + contentUSL + CONTENT_CLOSE;
+    
+    if (this.pm_content != null)
+      usl += CONTENT_OPEN + this.pm_content.getUSL() + CONTENT_CLOSE;
     return usl;
   }
 

@@ -1,6 +1,7 @@
 package reasoner;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,6 +44,14 @@ public class Reasoner<T extends Writable> {
   public static final String DEFAULT_BASENAME = "/tmp/ieml-reasoner";
   public static final long PROGRESS_SAVING_DELAY_MILLIS = 10000;
   public static final String DEFAULT_LANGUAGE = "fr";
+  private static final PrintStream LOG;
+  static {
+    try {
+      LOG = new PrintStream(DEFAULT_BASENAME + ".log");
+    } catch (FileNotFoundException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   private final Dictionary dict;
   private final ArrayList<T> database;
@@ -69,12 +78,18 @@ public class Reasoner<T extends Writable> {
     for (String usl: usls) {
       try {
         T parse = builder.parse(usl);
+        if (!parse.getUSL().contentEquals(usl)) {
+          synchronized (LOG) {
+            LOG.println("Non matching parsed and generated USLs:\n" + usl + "\n" + parse.getUSL());
+          }
+        }
         this.database.add(parse);
         try {
           dict.get(parse);
         } catch (MissingTranslationException e) {
-          //          System.err.println(dict.getUSLDict().containsKey(parse.getUSL()));
-          assert(false);
+          synchronized (LOG) {
+            LOG.println("No translation found for USL " + usl);
+          }
         }
       } catch (ParseException e) {
         this.parseFailed.add(usl);
@@ -493,6 +508,7 @@ public class Reasoner<T extends Writable> {
           } catch (MissingTranslationException e) {
             output += "<no " + DEFAULT_LANGUAGE + " translation>";
           }
+          //          output += "\t" + Reasoner.this.database.get(i).toString();
           out.println(output);
         }
         out.close();
@@ -544,8 +560,6 @@ public class Reasoner<T extends Writable> {
     threads.add(new Thread(new Runnable() {
       @Override
       public void run() {
-        HashMap<Relation, Set<Triple<Integer>>> relationMap = new HashMap<Relation, Set<Triple<Integer>>>();
-
         String equationsFilename = Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-equations.txt.bz2";
         String proportionsFilename = Reasoner.DEFAULT_BASENAME + "-" + Reasoner.this.typeName + "-proportions.txt.bz2";
         PrintStream equationsOut, proportionsOut;
@@ -615,6 +629,7 @@ public class Reasoner<T extends Writable> {
       morphemeReasoner = new Reasoner<Morpheme>(dict, usls, Morpheme.BUILDER, DEFAULT_LANGUAGE);
       polymorphemeReasoner = new Reasoner<Polymorpheme>(dict, usls, Polymorpheme.BUILDER, DEFAULT_LANGUAGE);
       lexemeReasoner = new Reasoner<Lexeme>(dict, usls, Lexeme.BUILDER, DEFAULT_LANGUAGE);
+      wordReasoner = new Reasoner<Word>(dict, usls, Word.BUILDER, DEFAULT_LANGUAGE);
     } catch (IOException e) {
       throw new RuntimeException("Cannot open IEML JSON exports. Please generate them first.", e);
     }
@@ -623,6 +638,7 @@ public class Reasoner<T extends Writable> {
     threads.addAll(morphemeReasoner.defaultGeneration());
     threads.addAll(polymorphemeReasoner.defaultGeneration());
     threads.addAll(lexemeReasoner.defaultGeneration());
+    threads.addAll(wordReasoner.defaultGeneration());
 
     for (Thread thread: threads)
       thread.join();

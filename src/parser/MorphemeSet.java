@@ -6,16 +6,12 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import io.github.vletard.analogy.SubtypeRebuilder;
 import io.github.vletard.analogy.set.ImmutableSet;
 import util.Pair;
 
 public class MorphemeSet extends IEMLSet<Morpheme> {
   private static final long serialVersionUID = -7540455236524511294L;
-  private static final Pattern BLANK_PATTERN = Pattern.compile("(\\s*).*");
   
   private final SortedSet<Morpheme> sorted;
 
@@ -45,10 +41,7 @@ public class MorphemeSet extends IEMLSet<Morpheme> {
         if (result.getFirst().isParadigm())
           throw new ParseException(MorphemeSet.class, offset, input);
         offset += result.getSecond();
-        Matcher m = BLANK_PATTERN.matcher(input.substring(offset));
-        boolean matching = m.matches();
-        assert(matching);
-        offset += m.group(1).length();
+        offset += ParseUtils.consumeBlanks(input.substring(offset));
         morphemes.add(result.getFirst());
       }
     } catch (ParseException e) {

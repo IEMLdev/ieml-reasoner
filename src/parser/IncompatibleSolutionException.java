@@ -6,4 +6,8 @@ public class IncompatibleSolutionException extends Exception {
   public IncompatibleSolutionException(Exception cause) {
     super(cause);
   }
+
+  public IncompatibleSolutionException(String msg) {
+    super(msg);
+  }
 }
