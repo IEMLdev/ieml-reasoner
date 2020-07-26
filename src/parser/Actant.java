@@ -172,22 +172,25 @@ public class Actant extends SyntagmaticFunction {
       assert(role.size() > 0);
       if (role.get(0).getUSL().contentEquals(TYPE_ROLE)) {
         if (role.size() == 1)
-          usl += ROLE_MARKER;
+          usl += ROLE_MARKER + " ";
         else
           nextRoleList.add(role.subList(1, role.size()));
       }
     }
     
-    String nextPathPrefix = pathPrefix + " " + TYPE_ROLE;
-    usl += nextPathPrefix + " " + this.actor.getUSL() + " ";
+    String nextPathPrefix = "";
+    if (pathPrefix.length() > 0)
+      nextPathPrefix += pathPrefix + " ";
+    nextPathPrefix += TYPE_ROLE;
+    usl += nextPathPrefix + " " + this.actor.getUSL();
 
     if (this.dependant != null) {
-      usl += SYNTAGMATIC_FUNCTION_SEPARATOR + " ";
+      usl += " " + SYNTAGMATIC_FUNCTION_SEPARATOR + " ";
       usl += this.dependant.generateUSL(nextRoleList, nextPathPrefix);
     }
     
     if (this.independant != null) {
-      usl += SYNTAGMATIC_FUNCTION_SEPARATOR + " ";
+      usl += " " + SYNTAGMATIC_FUNCTION_SEPARATOR + " ";
       usl += this.independant.generateUSL(nextRoleList, nextPathPrefix);
     }
     return usl;

@@ -236,7 +236,7 @@ public class Process extends SyntagmaticFunction {
 
     assert(pathPrefix.contentEquals(""));
 
-    usl += pathPrefix + " " + rootTypeRole + " ";
+    usl += rootTypeRole + " ";
     usl += this.root.getUSL();
 
     for (int i = 0; i < FUNCTION_NAMES.size(); i++) {
@@ -260,15 +260,15 @@ public class Process extends SyntagmaticFunction {
         }
 
         usl += functionUSL + " ";
-        usl += syntagma.getActor() + " ";
+        usl += syntagma.getActor().getUSL();
 
         if (syntagma.get(Actant.TYPE_ROLE_NAME) != null) {
-          usl += SYNTAGMATIC_FUNCTION_SEPARATOR + " ";
+          usl += " " + SYNTAGMATIC_FUNCTION_SEPARATOR + " ";
           usl += syntagma.getDependant().generateUSL(nextRoleList, functionUSL);
         }
 
         if (syntagma.getIndependant() != null) {
-          usl += SYNTAGMATIC_FUNCTION_SEPARATOR + " ";
+          usl += " " + SYNTAGMATIC_FUNCTION_SEPARATOR + " ";
           usl += syntagma.getIndependant().generateUSL(nextRoleList, functionUSL);
         }
       }

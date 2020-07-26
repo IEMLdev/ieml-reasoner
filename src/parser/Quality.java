@@ -99,7 +99,9 @@ public class Quality extends SyntagmaticFunction {
       usl += ROLE_MARKER + " ";
     }
     
-    usl += pathPrefix + " " + TYPE_ROLE + " " + this.actor.getUSL();
+    if (pathPrefix.length() > 0)
+      usl += pathPrefix + " ";
+    usl += TYPE_ROLE + " " + this.actor.getUSL();
     
     return usl;
   }
