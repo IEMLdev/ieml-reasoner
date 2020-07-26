@@ -28,14 +28,14 @@ gitdb.pull() # download database in ~/.cache/ieml/ folder
 # instanciate a ieml.ieml_database.IEMLDatabase from the downloaded git repository
 db = IEMLDatabase(folder=gitdb.folder)
 
-usls = db.list(parse=True, type='word')
-
-parsed_usls = list()
-for e in tqdm(usls):
-    parsed_usls.append(get_word_structure(e))
-
-with bz2.open(WORDS_FILENAME + ".bz2", "wt") as fout:
-    json.dump(parsed_usls, fout, indent=2)
+# usls = db.list(parse=True, type='word')
+# 
+# parsed_usls = list()
+# for e in tqdm(usls):
+#     parsed_usls.append(get_word_structure(e))
+# 
+# with bz2.open(WORDS_FILENAME + ".bz2", "wt") as fout:
+#     json.dump(parsed_usls, fout, indent=2)
 
 
 descriptors = db.get_descriptors()

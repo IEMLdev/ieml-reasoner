@@ -595,7 +595,6 @@ public class Reasoner<T extends Writable> {
 
 
   public static void main(String[] args) throws JSONStructureException, InterruptedException, ParseException {
-    final String WORDS_SAMPLE_FILENAME = "resources/words_sample.json.bz2";
     final String DICTIONARY_FILENAME = "resources/dictionary.json.bz2";
 
     Reasoner<Morpheme> morphemeReasoner;
@@ -604,7 +603,6 @@ public class Reasoner<T extends Writable> {
     Reasoner<Word> wordReasoner;
 
     try {
-      InputStream wordStream = new BZip2CompressorInputStream(new FileInputStream(WORDS_SAMPLE_FILENAME));
       InputStream dictStream = new BZip2CompressorInputStream(new FileInputStream(DICTIONARY_FILENAME));
 
       ArrayList<JSONObject> jsonTranslations = new ArrayList<JSONObject>();
