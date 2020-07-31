@@ -10,17 +10,17 @@ This project of reasoner has two main purposes: help extending IEML by exploitin
 
 ### Code
 
+**TL;DR**: `./run.sh`
+
 The projects depends on the [IEML main system project](https://github.com/IEMLdev/ieml) (in a git submodule), an [analogical reasoner](https://github.com/vletard/analogy-java) (in a git submodule), and a [Java JSON parser](https://github.com/stleary/JSON-java) (as external library).
 
 Git submodule dependencies are initialized with `git submodule update --init`
 
-External libraries are automatically retrieved if necessary at compilation time.
-
-[Apache Ant](https://ant.apache.org/) is also helpful for simple compilation and running of the system, but not mandatory.
+Build with `mvn package` and run `target/ieml-reasoner-1.0-SNAPSHOT-jar-with-dependencies.jar`
 
 ### Resources
 
-The reasoner also requires a JSON extraction of the IEML database.
+The reasoner also requires a dump of the IEML dictionary.
 The files are already packed in the `resources/` directory, they can be updated when necessary by using:
 `python3 usl_extract.py` (after git submodule initialization).
 
