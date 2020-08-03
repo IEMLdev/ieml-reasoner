@@ -1,37 +1,25 @@
 package parser;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-
-import org.json.JSONObject;
-
 import io.github.vletard.analogy.SubtypeRebuilder;
 import io.github.vletard.analogy.set.ImmutableSet;
 import io.github.vletard.analogy.tuple.SubTupleRebuilder;
 import io.github.vletard.analogy.tuple.Tuple;
+import org.json.JSONObject;
 import reasoner.Dictionary;
 import util.Pair;
+
+import java.util.*;
 
 public class FlexionSet extends IEMLTuple {
   private static final long serialVersionUID = 6890558580471932997L;
   
   private static final Map<Object, SubtypeRebuilder<?, ?>> BUILDER_MAP;
   static {
-    Map<Object, SubtypeRebuilder<?, ? extends IEMLUnit>> map = new HashMap<Object, SubtypeRebuilder<?, ? extends IEMLUnit>>();
-    map.put("constant", MorphemeSet.BUILDER);
-    map.put("groups", new SubtypeRebuilder<ImmutableSet<PolymorphemeGroup>, IEMLSet<PolymorphemeGroup>>() {
-      @Override
-      public IEMLSet<PolymorphemeGroup> rebuild(ImmutableSet<PolymorphemeGroup> object) {
-        return new IEMLSet<PolymorphemeGroup>(object.asSet());
-      }
-    });
-    BUILDER_MAP = Collections.unmodifiableMap(map);
+    BUILDER_MAP = Map.of("constant", MorphemeSet.BUILDER, "groups",
+        (SubtypeRebuilder<ImmutableSet<PolymorphemeGroup>, IEMLSet<PolymorphemeGroup>>) object -> new IEMLSet<>(object.asSet()));
   }
   
-  public static final SubTupleRebuilder<IEMLUnit, FlexionSet> BUILDER = new SubTupleRebuilder<IEMLUnit, FlexionSet>(BUILDER_MAP) {
+  public static final SubTupleRebuilder<IEMLUnit, FlexionSet> BUILDER = new SubTupleRebuilder<>(BUILDER_MAP) {
 
     @Override
     public FlexionSet rebuild(Tuple<IEMLUnit> object) {
@@ -57,7 +45,7 @@ public class FlexionSet extends IEMLTuple {
     if (type.contentEquals("polymorpheme"))
       return true;
     else if (type.contentEquals("morpheme")) {  // irregular value, should be uniformized
-      return (obj.isNull("constant") || obj.getJSONArray("constant").length() == 1) && obj.getJSONArray("groups").length() == 0;
+      return (obj.isNull("constant") || obj.getJSONArray("constant").length() == 1) && obj.getJSONArray("groups").isEmpty();
       //      int total = obj.getJSONArray("constant").length();
       //      for (int i = 0; i < obj.getJSONArray("groups").length(); i++)
       //        total += obj.getJSONArray("groups").getJSONArray(i).length();
@@ -73,27 +61,27 @@ public class FlexionSet extends IEMLTuple {
     MorphemeSet constant;
     try {
       Pair<MorphemeSet, Integer> result = MorphemeSet.parse(input);
-      constant = result.getFirst();
-      offset += result.getSecond();
+      constant = result.first;
+      offset += result.second;
     } catch (ParseException e) {
       constant = new MorphemeSet();
     }
 
-    final HashSet<PolymorphemeGroup> g = new HashSet<PolymorphemeGroup>();
+    final HashSet<PolymorphemeGroup> g = new HashSet<>();
     try {
       while (true) {
         Pair<PolymorphemeGroup, Integer> result = PolymorphemeGroup.parse(input.substring(offset));
-        g.add(result.getFirst());
-        offset += result.getSecond();
+        g.add(result.first);
+        offset += result.second;
       }
-    } catch (ParseException e ) {};
+    } catch (ParseException e ) {}
 
-    IEMLSet<PolymorphemeGroup> groups = new IEMLSet<PolymorphemeGroup>(g);
-    HashMap<Object, IEMLUnit> map = new HashMap<Object, IEMLUnit>();
+    IEMLSet<PolymorphemeGroup> groups = new IEMLSet<>(g);
+    HashMap<Object, IEMLUnit> map = new HashMap<>();
     map.put("constant", constant);
     map.put("groups", groups);
 
-    return new Pair<FlexionSet, Integer>(new FlexionSet(map, constant, groups), offset);
+    return new Pair<>(new FlexionSet(map, constant, groups), offset);
   }
 
   public static FlexionSet reBuild(Tuple<?> t) throws IncompatibleSolutionException {
@@ -102,13 +90,13 @@ public class FlexionSet extends IEMLTuple {
       final IEMLSet<PolymorphemeGroup> groups;
 
       {
-        HashSet<PolymorphemeGroup> group_set = new HashSet<PolymorphemeGroup>();
+        HashSet<PolymorphemeGroup> group_set = new HashSet<>();
         for (Tuple<IEMLUnit> group_tuple: (ImmutableSet<Tuple<IEMLUnit>>) t.get("groups"))
           group_set.add(PolymorphemeGroup.reBuild(group_tuple));
-        groups = new IEMLSet<PolymorphemeGroup>(group_set);
+        groups = new IEMLSet<>(group_set);
       }
       
-      HashMap<Object, IEMLUnit> map = new HashMap<Object, IEMLUnit>();
+      HashMap<Object, IEMLUnit> map = new HashMap<>();
       map.put("constant", constant);
       map.put("groups", groups);
       
@@ -142,7 +130,7 @@ public class FlexionSet extends IEMLTuple {
     return usl;
   }
 
-  public static FlexionSet factory(JSONObject obj) throws StyleException, JSONStructureException {
+  public static FlexionSet factory(JSONObject obj) {
     throw new UnsupportedOperationException();
 //    if (!checkStyle(obj))
 //      throw new StyleException();
@@ -177,23 +165,23 @@ public class FlexionSet extends IEMLTuple {
   }
 
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
-    HashMap<Object, Object> map = new HashMap<Object, Object>();
+    HashMap<Object, Object> map = new HashMap<>();
     
-    HashSet<Object> constant = new HashSet<Object>();
+    HashSet<Object> constant = new HashSet<>();
     for (Morpheme m: this.constant)
       constant.add(m.mixedTranslation(lang, depth-1, dictionary));
 
-    ArrayList<HashSet<Object>> groups = new ArrayList<HashSet<Object>>();
+    ArrayList<HashSet<Object>> groups = new ArrayList<>();
     for (PolymorphemeGroup g: this.groups) {
-      HashSet<Object> group = new HashSet<Object>();
+      HashSet<Object> group = new HashSet<>();
       for (Morpheme m: g.getMorphemes())
         group.add(m.mixedTranslation(lang, depth-1, dictionary));
       groups.add(group);
     }
 
-    map.put("constant", new ImmutableSet<Object>(constant));
+    map.put("constant", new ImmutableSet<>(constant));
     for (int i = 0; i < groups.size(); i++)
-      map.put(i, new ImmutableSet<Object>(groups.get(i)));
-    return new Tuple<Object>(map);
+      map.put(i, new ImmutableSet<>(groups.get(i)));
+    return new Tuple<>(map);
   }
 }

@@ -8,7 +8,7 @@ public class IEMLBooleanAttribute implements IEMLUnit {
   }
   
   public boolean booleanValue() {
-    return this.bool.booleanValue();
+    return this.bool;
   }
   
   @Override
@@ -34,10 +34,7 @@ public class IEMLBooleanAttribute implements IEMLUnit {
       return false;
     IEMLBooleanAttribute other = (IEMLBooleanAttribute) obj;
     if (bool == null) {
-      if (other.bool != null)
-        return false;
-    } else if (!bool.equals(other.bool))
-      return false;
-    return true;
+      return other.bool == null;
+    } else return bool.equals(other.bool);
   }
 }

@@ -32,7 +32,7 @@ public class IEMLStringAttribute implements IEMLUnit, CharSequence {
   
   @Override
   public String toString() {
-    return this.str.toString();
+    return this.str;
   }
 
   @Override
@@ -53,10 +53,7 @@ public class IEMLStringAttribute implements IEMLUnit, CharSequence {
       return false;
     IEMLStringAttribute other = (IEMLStringAttribute) obj;
     if (str == null) {
-      if (other.str != null)
-        return false;
-    } else if (!str.contentEquals(other.str))
-      return false;
-    return true;
+      return other.str == null;
+    } else return str.contentEquals(other.str);
   }
 }

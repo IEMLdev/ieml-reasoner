@@ -1,20 +1,19 @@
 package parser;
 
+import io.github.vletard.analogy.RebuildException;
+import io.github.vletard.analogy.SubtypeRebuilder;
+import io.github.vletard.analogy.tuple.SubTupleRebuilder;
+import io.github.vletard.analogy.tuple.Tuple;
+import org.json.JSONException;
+import org.json.JSONObject;
+import reasoner.Dictionary;
+import util.Pair;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import io.github.vletard.analogy.RebuildException;
-import io.github.vletard.analogy.SubtypeRebuilder;
-import io.github.vletard.analogy.tuple.SubTupleRebuilder;
-import io.github.vletard.analogy.tuple.Tuple;
-import reasoner.Dictionary;
-import util.Pair;
 
 public abstract class SyntagmaticFunction extends IEMLTuple {
   // note, it may not be mandatory to separate SyntagmaticFunction from Process Actant and Quality
@@ -26,15 +25,15 @@ public abstract class SyntagmaticFunction extends IEMLTuple {
   
   private static final Map<Object, SubtypeRebuilder<?, ?>> BUILDER_MAP;
   static {
-    BUILDER_MAP = new HashMap<Object, SubtypeRebuilder<?,?>>();
+    BUILDER_MAP = new HashMap<>(5);
     BUILDER_MAP.put("root", Lexeme.BUILDER);
     BUILDER_MAP.put("actor", Lexeme.BUILDER);
     BUILDER_MAP.put(Actant.TYPE_NAME, SyntagmaticFunction.BUILDER);
     BUILDER_MAP.put(Quality.TYPE_NAME, SyntagmaticFunction.BUILDER);
     BUILDER_MAP.put("syntagmae", new SubTupleRebuilder<IEMLUnit, IEMLTuple>(SyntagmaticFunction.BUILDER) {
       @Override
-      public IEMLTuple rebuild(Tuple<IEMLUnit> t) throws RebuildException {
-        Map<Object, SyntagmaticFunction> m = new HashMap<Object, SyntagmaticFunction>();
+      public IEMLTuple rebuild(Tuple<IEMLUnit> t) {
+        Map<Object, SyntagmaticFunction> m = new HashMap<>();
         for (Object key: t.keySet())
           m.put(key, (SyntagmaticFunction) t.get(key));
         return new IEMLTuple(m);
@@ -42,7 +41,7 @@ public abstract class SyntagmaticFunction extends IEMLTuple {
     });
   }
   
-  public static final SubTupleRebuilder<IEMLUnit, SyntagmaticFunction> BUILDER = new SubTupleRebuilder<IEMLUnit, SyntagmaticFunction>(BUILDER_MAP) {
+  public static final SubTupleRebuilder<IEMLUnit, SyntagmaticFunction> BUILDER = new SubTupleRebuilder<>(BUILDER_MAP) {
     @Override
     public SyntagmaticFunction rebuild(Tuple<IEMLUnit> t) throws RebuildException {
       try {
@@ -78,7 +77,7 @@ public abstract class SyntagmaticFunction extends IEMLTuple {
     }
   }
 
-  public static SyntagmaticFunction factory(JSONObject obj) throws JSONStructureException, JSONException, StyleException {
+  public static SyntagmaticFunction factory(JSONObject obj) throws JSONException, StyleException {
     String type = obj.getString("type");
 
     switch (type) {
@@ -115,21 +114,21 @@ public abstract class SyntagmaticFunction extends IEMLTuple {
 
   static Pair<List<Morpheme>, Integer> parsePath(String input, int offset) throws ParseException {
     try {
-      List<Morpheme> path = new ArrayList<Morpheme>();
+      List<Morpheme> path = new ArrayList<>();
       Pair<Morpheme, Integer> morphemeParse = Morpheme.parse(input.substring(offset));
-      path.add(morphemeParse.getFirst());
-      offset += morphemeParse.getSecond();
+      path.add(morphemeParse.first);
+      offset += morphemeParse.second;
 
       try {
         while (true) {
           int tmp_offset = offset + ParseUtils.consumeBlanks(input.substring(offset));
           
           morphemeParse = Morpheme.parse(input.substring(tmp_offset));
-          path.add(morphemeParse.getFirst());
-          offset = tmp_offset + morphemeParse.getSecond();
+          path.add(morphemeParse.first);
+          offset = tmp_offset + morphemeParse.second;
         }
       } catch (ParseException e) {}
-      return new Pair<List<Morpheme>, Integer>(path, offset);
+      return new Pair<>(path, offset);
 
     } catch (ParseException e) {
       throw new ParseException(SyntagmaticFunction.class, offset, input);

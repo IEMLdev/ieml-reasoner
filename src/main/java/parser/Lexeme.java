@@ -1,17 +1,15 @@
 package parser;
 
-import java.util.Collections;
+import io.github.vletard.analogy.SubtypeRebuilder;
+import io.github.vletard.analogy.tuple.Tuple;
+import org.json.JSONObject;
+import reasoner.Dictionary;
+import util.Pair;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.json.JSONObject;
-
-import io.github.vletard.analogy.SubtypeRebuilder;
-import io.github.vletard.analogy.tuple.Tuple;
-import reasoner.Dictionary;
-import util.Pair;
 
 public class Lexeme extends Writable {
 
@@ -28,19 +26,16 @@ public class Lexeme extends Writable {
 
   private static final Map<Object, SubtypeRebuilder<?, ?>> BUILDER_MAP;
   static {
-    Map<Object, SubtypeRebuilder<?, ? extends IEMLUnit>> map = new HashMap<Object, SubtypeRebuilder<?, ? extends IEMLUnit>>();
-    map.put("content", Polymorpheme.BUILDER);
-    map.put("flexions", FlexionSet.BUILDER);
-    BUILDER_MAP = Collections.unmodifiableMap(map);
+    BUILDER_MAP = Map.of("content", Polymorpheme.BUILDER, "flexions", FlexionSet.BUILDER);
   }
-  public static final WritableBuilder<Lexeme> BUILDER = new WritableBuilder<Lexeme>(BUILDER_MAP) {
+  public static final WritableBuilder<Lexeme> BUILDER = new WritableBuilder<>(BUILDER_MAP) {
 
     @Override
     public Lexeme parse(String usl) throws ParseException {
       Pair<Lexeme, Integer> parse = Lexeme.parse(usl);
-      if (parse.getSecond() != usl.length())
-        throw new ParseException(Lexeme.class, parse.getSecond(), usl);
-      return parse.getFirst();
+      if (parse.second != usl.length())
+        throw new ParseException(Lexeme.class, parse.second, usl);
+      return parse.first;
     }
 
     @Override
@@ -71,7 +66,7 @@ public class Lexeme extends Writable {
 
       offset += matcher.group(1).length();
       Pair<FlexionSet, Integer> flexionParse = FlexionSet.parse(input.substring(offset));
-      offset += flexionParse.getSecond();
+      offset += flexionParse.second;
       matcher = FLEXION_CLOSE_PATTERN.matcher(input.substring(offset));
       if (!matcher.matches())
         throw new ParseException(Lexeme.class, 0, input);
@@ -83,8 +78,8 @@ public class Lexeme extends Writable {
         offset += matcher.group(1).length();
 
         Pair<Polymorpheme, Integer> contentParse = Polymorpheme.parse(input.substring(offset));
-        offset += contentParse.getSecond();
-        content = contentParse.getFirst();
+        offset += contentParse.second;
+        content = contentParse.first;
 
         matcher = CONTENT_CLOSE_PATTERN.matcher(input.substring(offset));
         if (!matcher.matches())
@@ -92,12 +87,12 @@ public class Lexeme extends Writable {
         offset += matcher.group(1).length();
       }
 
-      HashMap<String, IEMLUnit> map = new HashMap<String, IEMLUnit>();
+      HashMap<String, IEMLUnit> map = new HashMap<>();
       map.put("type", new IEMLStringAttribute(typeName));
       map.put("content", content);
-      map.put("flexions", flexionParse.getFirst());
+      map.put("flexions", flexionParse.first);
 
-      return new Pair<Lexeme, Integer>(new Lexeme(map, content, flexionParse.getFirst()), offset);
+      return new Pair<>(new Lexeme(map, content, flexionParse.first), offset);
     } catch (ParseException e) {
       throw new ParseException(Lexeme.class, e.getOffset() + offset, input);
     }
@@ -119,7 +114,7 @@ public class Lexeme extends Writable {
       else
         flexion = null;
 
-      HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+      HashMap<String, IEMLUnit> m = new HashMap<>();
       m.put("type", type);
       m.put("content", content);
       m.put("flexions", flexion);
@@ -137,7 +132,7 @@ public class Lexeme extends Writable {
     final Polymorpheme content = Polymorpheme.factory(obj.getJSONObject("pm_content"));
     final FlexionSet flexion = FlexionSet.factory(obj.getJSONObject("pm_flexion"));
 
-    HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+    HashMap<String, IEMLUnit> m = new HashMap<>();
     m.put("type", type);
     m.put("content", content);
     m.put("flexions", flexion);
@@ -156,17 +151,17 @@ public class Lexeme extends Writable {
 
   @Override
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
-    HashMap<String, Object> m = new HashMap<String, Object>();
+    HashMap<String, Object> m = new HashMap<>();
     if (depth <= 0) {
       try {
         m.put("translations", dictionary.get(this).get(lang));
-        return new Tuple<Object>(m);
+        return new Tuple<>(m);
       } catch (MissingTranslationException e) {
         // in case no translation exist for this word in the dictionary, the mixed translation continues deeper
       }
     }
     m.put("pm_content", this.pm_content.mixedTranslation(lang, depth-1, dictionary));
     m.put("pm_flexion", this.pm_flexion.mixedTranslation(lang, depth-1, dictionary));
-    return new Tuple<Object>(m);
+    return new Tuple<>(m);
   }
 }

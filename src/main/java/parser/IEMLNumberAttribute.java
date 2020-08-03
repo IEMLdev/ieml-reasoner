@@ -51,10 +51,7 @@ public class IEMLNumberAttribute extends Number implements IEMLUnit {
       return false;
     IEMLNumberAttribute other = (IEMLNumberAttribute) obj;
     if (n == null) {
-      if (other.n != null)
-        return false;
-    } else if (!n.equals(other.n))
-      return false;
-    return true;
+      return other.n == null;
+    } else return n.equals(other.n);
   }
 }
