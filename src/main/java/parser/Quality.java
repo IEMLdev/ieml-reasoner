@@ -1,14 +1,14 @@
 package parser;
 
+import io.github.vletard.analogy.tuple.Tuple;
+import reasoner.Dictionary;
+import util.Pair;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
-
-import io.github.vletard.analogy.tuple.Tuple;
-import reasoner.Dictionary;
-import util.Pair;
 
 public class Quality extends SyntagmaticFunction {
   private static final long serialVersionUID = -135803884486184079L;
@@ -40,8 +40,8 @@ public class Quality extends SyntagmaticFunction {
     offset += ParseUtils.consumeBlanks(input.substring(offset));
     
     Pair<List<Morpheme>, Integer> pathParse = SyntagmaticFunction.parsePath(input, offset);
-    LinkedList<Morpheme> typePath = new LinkedList<Morpheme>(pathParse.getFirst());
-    offset = pathParse.getSecond();
+    LinkedList<Morpheme> typePath = new LinkedList<>(pathParse.first);
+    offset = pathParse.second;
     
     offset += ParseUtils.consumeBlanks(input.substring(offset));
 
@@ -55,13 +55,13 @@ public class Quality extends SyntagmaticFunction {
       role.set(typePath);
     
     Pair<Lexeme, Integer> lexemeParse = Lexeme.parse(input.substring(offset));
-    Lexeme actor = lexemeParse.getFirst();
-    offset += lexemeParse.getSecond();
+    Lexeme actor = lexemeParse.first;
+    offset += lexemeParse.second;
 
-    HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+    HashMap<String, IEMLUnit> m = new HashMap<>();
     m.put("actor", actor);
 
-    return new Pair<Quality, Integer>(new Quality(m, actor), offset);
+    return new Pair<>(new Quality(m, actor), offset);
   }
 
   public static Quality qualityRebuild(Tuple<?> t) throws IncompatibleSolutionException {
@@ -70,7 +70,7 @@ public class Quality extends SyntagmaticFunction {
     try {
       final Lexeme actor = Lexeme.reBuild((Tuple<?>) t.get("actor"));
       
-      HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+      HashMap<String, IEMLUnit> m = new HashMap<>();
       m.put("actor", actor);
       return new Quality(m, actor);
     } catch (ClassCastException e) {
@@ -79,10 +79,10 @@ public class Quality extends SyntagmaticFunction {
   }
 
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
-    HashMap<String, Object> m = new HashMap<String, Object>();
+    HashMap<String, Object> m = new HashMap<>();
     m.put("actor", this.actor.mixedTranslation(lang, depth-1, dictionary));
     m.put("type", this.get("type"));
-    return new Tuple<Object>(m);
+    return new Tuple<>(m);
   }
 
   @Override
@@ -99,7 +99,7 @@ public class Quality extends SyntagmaticFunction {
       usl += ROLE_MARKER + " ";
     }
     
-    if (pathPrefix.length() > 0)
+    if (!pathPrefix.isEmpty())
       usl += pathPrefix + " ";
     usl += TYPE_ROLE + " " + this.actor.getUSL();
     

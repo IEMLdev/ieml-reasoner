@@ -1,9 +1,9 @@
 package parser;
 
-import java.util.Map;
-
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
+
+import java.util.Map;
 
 public abstract class Writable extends IEMLTuple {
 

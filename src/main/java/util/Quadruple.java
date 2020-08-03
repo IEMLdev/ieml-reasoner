@@ -6,7 +6,7 @@ public class Quadruple<T> {
   private final ArrayList<T> items;
   
   public Quadruple(T first, T second, T third, T fourth) {
-    this.items = new ArrayList<T>();
+    this.items = new ArrayList<>();
     this.items.add(first);
     this.items.add(second);
     this.items.add(third);

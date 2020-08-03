@@ -7,7 +7,7 @@ public class Triple<T> implements Iterable<T> {
   private final ArrayList<T> items;
   
   public Triple(T first, T second, T third) {
-    this.items = new ArrayList<T>();
+    this.items = new ArrayList<>(3);
     this.items.add(first);
     this.items.add(second);
     this.items.add(third);
@@ -54,10 +54,7 @@ public class Triple<T> implements Iterable<T> {
       return false;
     Triple other = (Triple) obj;
     if (items == null) {
-      if (other.items != null)
-        return false;
-    } else if (!items.equals(other.items))
-      return false;
-    return true;
+      return other.items == null;
+    } else return items.equals(other.items);
   }
 }

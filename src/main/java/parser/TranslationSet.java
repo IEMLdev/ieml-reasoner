@@ -1,26 +1,21 @@
 package parser;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.util.*;
+import java.util.Map.Entry;
 
 public class TranslationSet implements Iterable<Map.Entry<String, List<String>>> {
 
   private final HashMap<String, ArrayList<String>> map;
   
   public TranslationSet(JSONObject obj) {
-    this.map = new HashMap<String, ArrayList<String>>();
+    this.map = new HashMap<>();
     
     final JSONObject tr = obj.getJSONObject("translations");
     for (String lang: tr.keySet()) {
-      ArrayList<String> trList = new ArrayList<String>();
+      ArrayList<String> trList = new ArrayList<>();
       JSONArray arr = tr.getJSONArray(lang);
       for (int i = 0; i < arr.length(); i++)
         trList.add(arr.getString(i));
@@ -57,19 +52,16 @@ public class TranslationSet implements Iterable<Map.Entry<String, List<String>>>
       return false;
     TranslationSet other = (TranslationSet) obj;
     if (map == null) {
-      if (other.map != null)
-        return false;
-    } else if (!map.equals(other.map))
-      return false;
-    return true;
+      return other.map == null;
+    } else return map.equals(other.map);
   }
 
   @Override
   public Iterator<Entry<String, List<String>>> iterator() {
-    return new Iterator<Map.Entry<String,List<String>>>() {
+    return new Iterator<>() {
 
       private final Iterator<Entry<String, ArrayList<String>>> it = TranslationSet.this.map.entrySet().iterator();
-      
+
       @Override
       public boolean hasNext() {
         return this.it.hasNext();
@@ -77,10 +69,10 @@ public class TranslationSet implements Iterable<Map.Entry<String, List<String>>>
 
       @Override
       public Entry<String, List<String>> next() {
-        return new Entry<String, List<String>>() {
+        return new Entry<>() {
 
           private final Entry<String, ArrayList<String>> entry = it.next();
-          
+
           @Override
           public String getKey() {
             return this.entry.getKey();

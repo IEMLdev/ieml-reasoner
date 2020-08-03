@@ -1,25 +1,19 @@
 package parser;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
 import util.Pair;
+
+import java.util.*;
+import java.util.regex.Matcher;
 
 public class Process extends SyntagmaticFunction {
   private static final long serialVersionUID = -4257752045085044328L;
   public static final IEMLStringAttribute TYPE_NAME = new IEMLStringAttribute("ProcessSyntagmaticFunction");
   public static final String TYPE_ROLE_NAME = "process";
-  public static final List<String> TYPE_ROLE_PER_VALENCE = Arrays.asList(new String[] {"E:S:.", "E:T:.", "E:B:."});
-  public static final List<String> FUNCTION_NAMES = Arrays.asList(new String[] {"initiator", "interactant", "recipient", "time", "location", "intention", "manner", "cause"});
-  public static final List<String> FUNCTION_USLS = Arrays.asList(new String[] {"E:.n.-", "E:.d.-", "E:.k.-", "E:.t.-", "E:.l.-", "E:.m.-", "E:.f.-", "E:.s.-"});
+  public static final List<String> TYPE_ROLE_PER_VALENCE = Arrays.asList("E:S:.", "E:T:.", "E:B:.");
+  public static final List<String> FUNCTION_NAMES = Arrays.asList("initiator", "interactant", "recipient", "time", "location", "intention", "manner", "cause");
+  public static final List<String> FUNCTION_USLS = Arrays.asList("E:.n.-", "E:.d.-", "E:.k.-", "E:.t.-", "E:.l.-", "E:.m.-", "E:.f.-", "E:.s.-");
 
   private final IEMLNumberAttribute valence;
   private final Lexeme root; // actor
@@ -49,8 +43,8 @@ public class Process extends SyntagmaticFunction {
     offset += ParseUtils.consumeBlanks(input.substring(offset));
 
     Pair<List<Morpheme>, Integer> pathParse = parsePath(input, offset);
-    LinkedList<Morpheme> typePath = new LinkedList<Morpheme>(pathParse.getFirst());
-    offset = pathParse.getSecond();
+    LinkedList<Morpheme> typePath = new LinkedList<>(pathParse.first);
+    offset = pathParse.second;
 
     offset += ParseUtils.consumeBlanks(input.substring(offset));
 
@@ -65,23 +59,23 @@ public class Process extends SyntagmaticFunction {
       role.set(typePath);
 
     Pair<Lexeme, Integer> lexemeParse = Lexeme.parse(input.substring(offset));
-    Lexeme root = lexemeParse.getFirst();
-    offset += lexemeParse.getSecond();
+    Lexeme root = lexemeParse.first;
+    offset += lexemeParse.second;
 
     Pair<IEMLTuple, Integer> syntagmaeParse = parseSyntagmae(role, input, offset, pathPrefix);
-    IEMLTuple syntagmae = syntagmaeParse.getFirst();
-    offset = syntagmaeParse.getSecond();
+    IEMLTuple syntagmae = syntagmaeParse.first;
+    offset = syntagmaeParse.second;
 
-    HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+    HashMap<String, IEMLUnit> m = new HashMap<>();
     m.put("root", root);
     m.put("syntagmae", syntagmae);
     m.put("valence", valence);
 
-    return new Pair<Process, Integer>(new Process(m, root, syntagmae, new IEMLNumberAttribute(valence)), offset);
+    return new Pair<>(new Process(m, root, syntagmae, new IEMLNumberAttribute(valence)), offset);
   }
 
-  private static Pair<IEMLTuple, Integer> parseSyntagmae(WordRole role, String input, int offset, List<Morpheme> pathPrefix) throws ParseException, StyleException {
-    HashMap<String, Actant> m = new HashMap<String, Actant>();
+  private static Pair<IEMLTuple, Integer> parseSyntagmae(WordRole role, String input, int offset, List<Morpheme> pathPrefix) throws StyleException {
+    HashMap<String, Actant> m = new HashMap<>();
 
     try {
       while (true) {
@@ -103,8 +97,8 @@ public class Process extends SyntagmaticFunction {
         tmp_offset += ParseUtils.consumeBlanks(input.substring(tmp_offset));
 
         Pair<List<Morpheme>, Integer> pathParse = SyntagmaticFunction.parsePath(input, tmp_offset);
-        LinkedList<Morpheme> typePath = new LinkedList<Morpheme>(pathParse.getFirst());
-        tmp_offset = pathParse.getSecond();
+        LinkedList<Morpheme> typePath = new LinkedList<>(pathParse.first);
+        tmp_offset = pathParse.second;
         tmp_offset += ParseUtils.consumeBlanks(input.substring(tmp_offset));
 
         if (typePath.size() - pathPrefix.size() != 1 || !typePath.subList(0, pathPrefix.size()).equals(pathPrefix))
@@ -119,8 +113,8 @@ public class Process extends SyntagmaticFunction {
           role.set(typePath);
 
         Pair<Lexeme, Integer> lexemeParse = Lexeme.parse(input.substring(tmp_offset));
-        Lexeme actor = lexemeParse.getFirst();
-        tmp_offset += lexemeParse.getSecond();
+        Lexeme actor = lexemeParse.first;
+        tmp_offset += lexemeParse.second;
 
         Actant dependant = null;
         Quality independant = null;
@@ -139,20 +133,20 @@ public class Process extends SyntagmaticFunction {
               if (dependant != null)
                 throw new ParseException(Actant.class, tmp_offset2, input);
 
-              dependant = actantParse.getFirst();
-              tmp_offset = actantParse.getSecond();
+              dependant = actantParse.first;
+              tmp_offset = actantParse.second;
             } catch (ParseException e) {
               Pair<Quality, Integer> qualityParse = Quality.parse(role, input, tmp_offset2, typePath);
               if (independant != null)
                 throw new ParseException(Actant.class, tmp_offset2, input);
 
-              independant = qualityParse.getFirst();
-              tmp_offset = qualityParse.getSecond();
+              independant = qualityParse.first;
+              tmp_offset = qualityParse.second;
             }
           }
         } catch (ParseException e) {}
 
-        HashMap<String, IEMLUnit> m2 = new HashMap<String, IEMLUnit>();
+        HashMap<String, IEMLUnit> m2 = new HashMap<>();
         m2.put("actor", actor);
         m2.put("dependant", dependant);
         m2.put("independant", independant);
@@ -162,7 +156,7 @@ public class Process extends SyntagmaticFunction {
       }
     } catch (ParseException e) {}
 
-    return new Pair<IEMLTuple, Integer>(new IEMLTuple(m), offset);
+    return new Pair<>(new IEMLTuple(m), offset);
   }
 
   public static Process processRebuild(Tuple<?> t) throws IncompatibleSolutionException {
@@ -176,7 +170,7 @@ public class Process extends SyntagmaticFunction {
       
       {
         Tuple<IEMLUnit> syntagmae_tmp = (Tuple<IEMLUnit>) t.get("syntagmae");
-        HashMap<Object, Actant> actants = new HashMap<Object, Actant>();
+        HashMap<Object, Actant> actants = new HashMap<>();
         for (Object key: syntagmae_tmp.keySet()) {
           if (syntagmae_tmp.get(key) == null)
             continue;
@@ -188,7 +182,7 @@ public class Process extends SyntagmaticFunction {
         syntagmae = new IEMLTuple(actants);
       }
 
-      HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+      HashMap<String, IEMLUnit> m = new HashMap<>();
       m.put("valence", valence);
       m.put("root", root);
       m.put("syntagmae", syntagmae);
@@ -199,12 +193,12 @@ public class Process extends SyntagmaticFunction {
   }
 
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
-    HashMap<String, Object> m = new HashMap<String, Object>();
+    HashMap<String, Object> m = new HashMap<>();
     m.put("root", this.root.mixedTranslation(lang, depth-1, dictionary));
     for (String functionName: FUNCTION_NAMES)
       if (this.syntagmae.containsKey(functionName))
         m.put(functionName, ((Actant) this.syntagmae.get(functionName)).mixedTranslation(lang, depth-1, dictionary));
-    return new Tuple<Object>(m);
+    return new Tuple<>(m);
   }
 
   @Override
@@ -227,7 +221,7 @@ public class Process extends SyntagmaticFunction {
     String usl = "";
     String rootTypeRole = TYPE_ROLE_PER_VALENCE.get(this.valence.intValue());
     for (List<Morpheme> role: roleList) {
-      assert(role.size() > 0);
+      assert(!role.isEmpty());
       if (role.get(0).getUSL().contentEquals(rootTypeRole)) {
         assert(role.size() == 1);
         usl += ROLE_MARKER + " ";
@@ -246,11 +240,11 @@ public class Process extends SyntagmaticFunction {
         String functionUSL = FUNCTION_USLS.get(i);
         usl += " " + SYNTAGMATIC_FUNCTION_SEPARATOR + " ";
         
-        List<List<Morpheme>> nextRoleList = new ArrayList<List<Morpheme>>();
+        List<List<Morpheme>> nextRoleList = new ArrayList<>();
         Actant syntagma = (Actant) this.syntagmae.get(functionName);
         
         for (List<Morpheme> role: roleList) {
-          assert(role.size() > 0);
+          assert(!role.isEmpty());
           if (role.get(0).getUSL().contentEquals(functionUSL)) {
             if (role.size() == 1)
               usl += ROLE_MARKER + " ";

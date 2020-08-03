@@ -1,17 +1,16 @@
 package parser;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import io.github.vletard.analogy.RebuildException;
 import io.github.vletard.analogy.SubtypeRebuilder;
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
 import util.Pair;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Word extends Writable {
   private static final long serialVersionUID = 8351186437917149613L;
@@ -23,17 +22,15 @@ public class Word extends Writable {
 
   private static final Map<Object, SubtypeRebuilder<?, ?>> BUILDER_MAP;
   static {
-    Map<Object, SubtypeRebuilder<?, ? extends IEMLUnit>> map = new HashMap<Object, SubtypeRebuilder<?, ? extends IEMLUnit>>();
-    map.put("syntagmatic_function", SyntagmaticFunction.BUILDER);
-    BUILDER_MAP = Collections.unmodifiableMap(map);
+    BUILDER_MAP = Map.of("syntagmatic_function", SyntagmaticFunction.BUILDER);
   }
-  public static final WritableBuilder<Word> BUILDER = new WritableBuilder<Word>(BUILDER_MAP) {
+  public static final WritableBuilder<Word> BUILDER = new WritableBuilder<>(BUILDER_MAP) {
 
     @Override
     public Word rebuild(Tuple<IEMLUnit> object) throws RebuildException {
       try {
         return reBuild(object);
-      } catch (IncompatibleSolutionException | StyleException e) {
+      } catch (IncompatibleSolutionException e) {
         throw new RebuildException(e);
       }
     }
@@ -44,11 +41,11 @@ public class Word extends Writable {
       try {
         parse = Word.parse(usl);
       } catch (StyleException e) {
-        throw new RuntimeException (e);
+        throw new RuntimeException(e);
       }
-      if (parse.getSecond() != usl.length())
-        throw new ParseException(Word.class, parse.getSecond(), usl);
-      return parse.getFirst();
+      if (parse.second != usl.length())
+        throw new ParseException(Word.class, parse.second, usl);
+      return parse.first;
     }
   };
 
@@ -79,18 +76,18 @@ public class Word extends Writable {
     SyntagmaticFunction sf;
     try {
       Pair<Process, Integer> processParse = Process.parse(wordRole, input.substring(offset));
-      sf = processParse.getFirst();
-      offset += processParse.getSecond();
+      sf = processParse.first;
+      offset += processParse.second;
     } catch (ParseException e) {
       try {
         Pair<Actant, Integer> actantParse = Actant.parse(wordRole, input.substring(offset));
-        sf = actantParse.getFirst();
-        offset += actantParse.getSecond();
+        sf = actantParse.first;
+        offset += actantParse.second;
       } catch (ParseException e2) {
         try {
           Pair<Quality, Integer> qualityParse = Quality.parse(wordRole, input.substring(offset));
-          sf = qualityParse.getFirst();
-          offset += qualityParse.getSecond();
+          sf = qualityParse.first;
+          offset += qualityParse.second;
         } catch (ParseException e3) {
           throw new ParseException(Word.class, offset, input);
         }
@@ -104,15 +101,15 @@ public class Word extends Writable {
 
     IEMLObjectAttribute role = wordRole.toIEMLUnit();
     
-    HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+    HashMap<String, IEMLUnit> m = new HashMap<>(3);
     m.put("type", TYPE_NAME);
     m.put("role", role);
     m.put("syntagmatic_function", sf);
 
-    return new Pair<Word, Integer>(new Word(m, role, sf), offset);
+    return new Pair<>(new Word(m, role, sf), offset);
   }
 
-  public static Word reBuild(Tuple<IEMLUnit> t) throws IncompatibleSolutionException, StyleException {
+  public static Word reBuild(Tuple<IEMLUnit> t) throws IncompatibleSolutionException {
     try {
       IEMLStringAttribute type = (IEMLStringAttribute) t.get("type");
       if (!type.contentEquals(TYPE_NAME))
@@ -124,7 +121,7 @@ public class Word extends Writable {
         if (!sf.checkStyle(rolePath))
           throw new IncompatibleSolutionException(new StyleException("Role points to a non existent node."));
 
-      HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+      HashMap<String, IEMLUnit> m = new HashMap<>();
       m.put("type", type);
       m.put("role", roleList);
       m.put("syntagmatic_function", sf);
@@ -144,17 +141,17 @@ public class Word extends Writable {
 
   @Override
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
-    HashMap<String, Object> m = new HashMap<String, Object>();
+    HashMap<String, Object> m = new HashMap<>();
     if (depth <= 0) {
       try {
         m.put("translations", dictionary.get(this).get(lang));
-        return new Tuple<Object>(m);
+        return new Tuple<>(m);
       } catch (MissingTranslationException e) {
         // in case no translation exist for this word in the dictionary, the mixed translation continues deeper
       }
     }
     m.put("role", this.role);
     m.put("syntagmatic_function", this.syntagmaticFunction.mixedTranslation(lang, depth-1, dictionary));
-    return new Tuple<Object>(m);
+    return new Tuple<>(m);
   }
 }

@@ -29,11 +29,8 @@ public class IEMLObjectAttribute implements IEMLUnit {
       return false;
     IEMLObjectAttribute other = (IEMLObjectAttribute) obj;
     if (object == null) {
-      if (other.object != null)
-        return false;
-    } else if (!object.equals(other.object))
-      return false;
-    return true;
+      return other.object == null;
+    } else return object.equals(other.object);
   }
 
   @Override

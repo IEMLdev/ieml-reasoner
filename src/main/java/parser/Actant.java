@@ -1,15 +1,11 @@
 package parser;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.regex.Matcher;
-
 import io.github.vletard.analogy.tuple.Tuple;
 import reasoner.Dictionary;
 import util.Pair;
+
+import java.util.*;
+import java.util.regex.Matcher;
 
 public class Actant extends SyntagmaticFunction {
   private static final long serialVersionUID = 6496934876365452689L;
@@ -45,8 +41,8 @@ public class Actant extends SyntagmaticFunction {
     offset += ParseUtils.consumeBlanks(input.substring(offset));
 
     Pair<List<Morpheme>, Integer> pathParse = SyntagmaticFunction.parsePath(input, offset);
-    LinkedList<Morpheme> typePath = new LinkedList<Morpheme>(pathParse.getFirst());
-    offset = pathParse.getSecond();
+    LinkedList<Morpheme> typePath = new LinkedList<>(pathParse.first);
+    offset = pathParse.second;
     
     offset += ParseUtils.consumeBlanks(input.substring(offset));
 
@@ -60,8 +56,8 @@ public class Actant extends SyntagmaticFunction {
       role.set(typePath);
     
     Pair<Lexeme, Integer> lexemeParse = Lexeme.parse(input.substring(offset));
-    Lexeme actor = lexemeParse.getFirst();
-    offset += lexemeParse.getSecond();
+    Lexeme actor = lexemeParse.first;
+    offset += lexemeParse.second;
 
     Actant dependant = null;
     Quality independant = null;
@@ -81,25 +77,25 @@ public class Actant extends SyntagmaticFunction {
           if (dependant != null)
             throw new ParseException(Actant.class, tmp_offset, input);
 
-          dependant = actantParse.getFirst();
-          offset = actantParse.getSecond();
+          dependant = actantParse.first;
+          offset = actantParse.second;
         } catch (ParseException e) {
           Pair<Quality, Integer> qualityParse = Quality.parse(role, input, tmp_offset, typePath);
           if (independant != null)
             throw new ParseException(Actant.class, tmp_offset, input);
 
-          independant = qualityParse.getFirst();
-          offset = qualityParse.getSecond();
+          independant = qualityParse.first;
+          offset = qualityParse.second;
         }
       }
     } catch (ParseException e) {}
 
-    HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+    HashMap<String, IEMLUnit> m = new HashMap<>();
     m.put("actor", actor);
     m.put(Actant.TYPE_ROLE_NAME, dependant);
     m.put(Quality.TYPE_ROLE_NAME, independant);
 
-    return new Pair<Actant, Integer>(new Actant(m, actor, dependant, independant), offset);
+    return new Pair<>(new Actant(m, actor, dependant, independant), offset);
   }
 
   public static Actant actantRebuild(Tuple<?> t) throws IncompatibleSolutionException {
@@ -125,7 +121,7 @@ public class Actant extends SyntagmaticFunction {
         independant = Quality.qualityRebuild(indepActant);
       }
 
-      HashMap<String, IEMLUnit> m = new HashMap<String, IEMLUnit>();
+      HashMap<String, IEMLUnit> m = new HashMap<>();
       m.put("actor", actor);
       m.put(Actant.TYPE_ROLE_NAME, dependant);
       m.put(Quality.TYPE_ROLE_NAME, independant);
@@ -136,14 +132,14 @@ public class Actant extends SyntagmaticFunction {
   }
 
   public Tuple<Object> mixedTranslation(String lang, int depth, Dictionary dictionary) {
-    HashMap<String, Object> m = new HashMap<String, Object>();
+    HashMap<String, Object> m = new HashMap<>();
     m.put("actor", this.actor.mixedTranslation(lang, depth-1, dictionary));
     m.put("type", this.get("type"));
     if (this.dependant != null)
       m.put("dependant", this.dependant.mixedTranslation(lang, depth-1, dictionary));
     if (this.independant != null)
       m.put("independant", this.independant.mixedTranslation(lang, depth-1, dictionary));
-    return new Tuple<Object>(m);
+    return new Tuple<>(m);
   }
 
   @Override
@@ -165,11 +161,11 @@ public class Actant extends SyntagmaticFunction {
 
   @Override
   String generateUSL(List<List<Morpheme>> roleList, String pathPrefix) {
-    List<List<Morpheme>> nextRoleList = new ArrayList<List<Morpheme>>();
+    List<List<Morpheme>> nextRoleList = new ArrayList<>();
     String usl = "";
     
     for (List<Morpheme> role: roleList) {
-      assert(role.size() > 0);
+      assert(!role.isEmpty());
       if (role.get(0).getUSL().contentEquals(TYPE_ROLE)) {
         if (role.size() == 1)
           usl += ROLE_MARKER + " ";
@@ -179,7 +175,7 @@ public class Actant extends SyntagmaticFunction {
     }
     
     String nextPathPrefix = "";
-    if (pathPrefix.length() > 0)
+    if (!pathPrefix.isEmpty())
       nextPathPrefix += pathPrefix + " ";
     nextPathPrefix += TYPE_ROLE;
     usl += nextPathPrefix + " " + this.actor.getUSL();
