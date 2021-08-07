@@ -1,28 +1,18 @@
 package reasoner;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.json.JSONObject;
+import parser.*;
 
-import parser.JSONStructureException;
-import parser.MissingTranslationException;
-import parser.ParseException;
-import parser.TranslationSet;
-import parser.Writable;
-import parser.WritableBuilder;
+import java.util.*;
 
 public class Dictionary {
 
   private final List<TranslationSet> translations;
   private final Map<Writable, Integer> writableDict;
 
-  public Dictionary(ArrayList<JSONObject> jsonTranslations) throws JSONStructureException, ParseException {
-    ArrayList<TranslationSet> translations = new ArrayList<TranslationSet>();
-    HashMap<Writable, Integer> writableDict = new HashMap<Writable, Integer>();
+  public Dictionary(ArrayList<JSONObject> jsonTranslations) throws JSONStructureException {
+    ArrayList<TranslationSet> translations = new ArrayList<>();
+    HashMap<Writable, Integer> writableDict = new HashMap<>();
 
     for (JSONObject obj: jsonTranslations) {
       TranslationSet t = new TranslationSet(obj);
